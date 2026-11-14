@@ -13,9 +13,9 @@ namespace DumaLens.Api.Tests.Infrastructure;
 public class TestWebApplicationFactory : WebApplicationFactory<Program>
 {
     /// <summary>
-    /// Имя одноразовой базы данных теста
+    /// Идентификатор одноразовой базы данных теста (подставляется в шаблон строки подключения один раз)
     /// </summary>
-    internal string DatabaseName { get; } = $"dumalens_{Guid.NewGuid():N}";
+    internal string DatabaseId { get; } = Guid.NewGuid().ToString("N");
 
     /// <inheritdoc cref="WebApplicationFactory{TEntryPoint}.ConfigureWebHost"/>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -34,7 +34,7 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
                 var template = configuration.GetConnectionString("IntegrationConnection");
                 var optionsBuilder = new DbContextOptionsBuilder<DumaLensContext>()
                     .UseApplicationServiceProvider(provider)
-                    .UseNpgsql(string.Format(template!, DatabaseName));
+                    .UseNpgsql(string.Format(template!, DatabaseId));
                 return optionsBuilder.Options;
             });
         });

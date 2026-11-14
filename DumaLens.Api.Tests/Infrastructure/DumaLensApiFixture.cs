@@ -48,8 +48,8 @@ public class DumaLensApiFixture : IAsyncLifetime
         {
             return;
         }
-        // Э0: модель пуста — EnsureCreated; с Э1 (миграции) — MigrateAsync
-        await Context.Database.EnsureCreatedAsync();
+        // Э1: схема накатывается миграциями (InitialCreate)
+        await Context.Database.MigrateAsync();
         databaseCreated = true;
     }
 

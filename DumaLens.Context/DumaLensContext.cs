@@ -1,6 +1,8 @@
 ﻿using DumaLens.Context.Contracts;
+using DumaLens.Entities;
 using DumaLens.Entities.Configurations;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using System.Diagnostics.CodeAnalysis;
 
 namespace DumaLens.Context;
@@ -21,6 +23,36 @@ public class DumaLensContext : DbContext, IReader, IWriter, IUnitOfWork
     {
         base.OnModelCreating(modelBuilder);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(IEntityConfiguration).Assembly);
+        if (Database.ProviderName == "Microsoft.EntityFrameworkCore.InMemory")
+        {
+            // InMemory-провайдер не поддерживает NpgsqlTsVector; генерируемая колонка нужна только на PostgreSQL
+            modelBuilder.Entity<Vote>().Ignore("TitleSearch");
+        }
+        UseUtcDateTimeOffset(modelBuilder);
+    }
+
+    /// <summary>
+    /// Нормализует все DateTimeOffset-свойства к UTC при записи
+    /// </summary>
+    /// <remarks>
+    /// Npgsql принимает в timestamptz только DateTimeOffset со смещением 0;
+    /// историческое смещение источника хранится отдельно (например, Vote.UtcOffsetMinutes).
+    /// </remarks>
+    private static void UseUtcDateTimeOffset(ModelBuilder modelBuilder)
+    {
+        var converter = new ValueConverter<DateTimeOffset, DateTimeOffset>(
+            value => value.ToUniversalTime(),
+            value => value);
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            foreach (var property in entityType.GetProperties())
+            {
+                if (property.ClrType == typeof(DateTimeOffset) || property.ClrType == typeof(DateTimeOffset?))
+                {
+                    property.SetValueConverter(converter);
+                }
+            }
+        }
     }
 
     IQueryable<TEntity> IReader.Read<TEntity>()

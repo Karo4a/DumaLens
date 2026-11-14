@@ -1,6 +1,7 @@
 ﻿using DumaLens.Api.Tests.Infrastructure;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using Xunit;
 
 namespace DumaLens.Api.Tests;
@@ -32,8 +33,10 @@ public class DatabaseSmokeTests
         // Arrange
         // Act
         var canConnect = await fixture.Context.Database.CanConnectAsync();
+        var database = new NpgsqlConnectionStringBuilder(fixture.Context.Database.GetConnectionString()!).Database;
 
         // Assert
         canConnect.Should().BeTrue();
+        database.Should().MatchRegex("^dumalens_[0-9a-f]{32}$", "шаблон строки подключения должен применяться один раз");
     }
 }

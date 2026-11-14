@@ -2,9 +2,11 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DumaLens.Entities\DumaLens.Entities.csproj" />
+    <ProjectReference Include="..\DumaLens.Entities.Default\DumaLens.Entities.Default.csproj" />
     <ProjectReference Include="..\DumaLens.Entities.ValidationConstants\DumaLens.Entities.ValidationConstants.csproj" />
   </ItemGroup>
 </Project>
