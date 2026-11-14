@@ -11,7 +11,7 @@ namespace DumaLens.Entities.Configurations;
 /// </summary>
 /// <remarks>
 /// Title — text без ограничения длины (паспорт данных, 02-data-sources.md, §2.3.9);
-/// TitleSearch — генерируемая tsvector-колонка с GIN-индексом для полнотекстового поиска (ADR-6).
+/// TitleSearch — генерируемая tsvector-колонка с GIN-индексом для полнотекстового поиска (ADR-1).
 /// </remarks>
 public class VoteConfiguration : IEntityTypeConfiguration<Vote>, IEntityConfiguration
 {

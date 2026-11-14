@@ -19,7 +19,7 @@
 
 ## Слои и DI
 
-`Api → Services → Repositories → Context → Entities`; `Web → Api.Client → Api.Models`; `Importer → Services / Parsing / Context`; `Parsing → Entities.Contracts / Common.Contracts`. Обратных ссылок нет. Регистрация DI — по анкерам `IServiceAnchor` / `IRepositoryAnchor` + `RegisterAssemblyInterfacesAssignableTo<T>`.
+`Api → Services → Repositories → Context → Entities`; `Web → Api.Client → Api.Models`; `Importer → Services / Parsing / Context`; `Parsing → Entities.Contracts / Common.Contracts / Entities.ValidationConstants / Parsing.Contracts`. Обратных ссылок нет. Регистрация DI — по анкерам `IServiceAnchor` / `IRepositoryAnchor` + `RegisterAssemblyInterfacesAssignableTo<T>`.
 
 ## Команды
 
