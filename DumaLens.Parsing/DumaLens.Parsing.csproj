@@ -1,0 +1,10 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <PackageReference Include="AngleSharp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\DumaLens.Parsing.Contracts\DumaLens.Parsing.Contracts.csproj" />
+    <ProjectReference Include="..\DumaLens.Entities.Contracts\DumaLens.Entities.Contracts.csproj" />
+    <ProjectReference Include="..\DumaLens.Common.Contracts\DumaLens.Common.Contracts.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,5 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\DumaLens.Parsing\DumaLens.Parsing.csproj" />
+  </ItemGroup>
+</Project>

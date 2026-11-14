@@ -1,0 +1,9 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\DumaLens.Common.Contracts\DumaLens.Common.Contracts.csproj" />
+    <ProjectReference Include="..\DumaLens.Entities.Contracts\DumaLens.Entities.Contracts.csproj" />
+  </ItemGroup>
+</Project>

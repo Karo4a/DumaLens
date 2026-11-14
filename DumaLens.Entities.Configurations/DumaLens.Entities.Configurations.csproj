@@ -1,0 +1,10 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\DumaLens.Entities\DumaLens.Entities.csproj" />
+    <ProjectReference Include="..\DumaLens.Entities.ValidationConstants\DumaLens.Entities.ValidationConstants.csproj" />
+  </ItemGroup>
+</Project>

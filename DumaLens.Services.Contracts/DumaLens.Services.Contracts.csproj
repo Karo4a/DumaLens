@@ -1,0 +1,10 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <PackageReference Include="FluentValidation" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\DumaLens.Entities\DumaLens.Entities.csproj" />
+    <ProjectReference Include="..\DumaLens.Repositories.Contracts\DumaLens.Repositories.Contracts.csproj" />
+    <ProjectReference Include="..\DumaLens.Services.Contracts.Models\DumaLens.Services.Contracts.Models.csproj" />
+  </ItemGroup>
+</Project>

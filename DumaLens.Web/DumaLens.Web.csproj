@@ -1,0 +1,6 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+  <ItemGroup>
+    <ProjectReference Include="..\DumaLens.Api.Client\DumaLens.Api.Client.csproj" />
+    <ProjectReference Include="..\DumaLens.Api.Models\DumaLens.Api.Models.csproj" />
+  </ItemGroup>
+</Project>
