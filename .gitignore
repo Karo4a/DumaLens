@@ -1,0 +1,30 @@
+# Docs
+Docs/
+
+# Local files
+chat.json
+chat-export-*.json
+
+# Archives
+*.zip
+
+# Build results
+bin/
+obj/
+publish/
+TestResults/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Local settings
+UserSecrets/
+appsettings.Local.json
+*.pfx
+
+# Logs
+*.log
