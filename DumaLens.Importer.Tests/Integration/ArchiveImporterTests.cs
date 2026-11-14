@@ -235,13 +235,220 @@ public sealed class ArchiveImporterTests
             (await context.Set<DeputyVote>().CountAsync()).Should().Be(894);
 
             var renamed = await context.Set<Deputy>().AsNoTracking().SingleAsync(x => x.SiteId == deputySiteId);
-            renamed.FullName.Should().Be(renamedFullName, "имя депутата уточняется последним голосованием пачки");
+            renamed.FullName.Should().Be(renamedFullName, "имя депутата уточняется по самому свежему голосованию");
 
             var memberships = await context.Set<DeputyFactionMembership>().AsNoTracking()
                 .Where(x => x.DeputyId == renamed.Id)
                 .ToListAsync();
             memberships.Should().NotBeEmpty();
             memberships.Should().OnlyContain(x => x.DateFrom <= x.DateTo);
+        }
+        finally
+        {
+            File.Delete(zipPath);
+            await database.DisposeAsync();
+        }
+    }
+
+    /// <summary>
+    /// Регресс (Б2): реимпорт архива не затирает итог, процент и источник, полученные с сайта (ADR-9)
+    /// </summary>
+    [SkippableFact]
+    public async Task Import_ExistingSiteVote_PreservesSiteFields()
+    {
+        var database = new DatabaseFixture();
+        await database.InitializeAsync();
+        Skip.If(database.SkipReason != null, database.SkipReason);
+        var zipPath = CreateMiniZip();
+        try
+        {
+            await RunImport(database.ConnectionString, zipPath, resume: false);
+
+            await using (var context = database.CreateContext())
+            {
+                var vote = await context.Set<Vote>().SingleAsync(x => x.SiteId == 126282);
+                vote.Source = VoteSource.Site;
+                vote.Outcome = VoteOutcome.Accepted;
+                vote.AcceptPercentSite = 88.4m;
+                await context.SaveChangesAsync();
+            }
+
+            await RunImport(database.ConnectionString, zipPath, resume: false);
+
+            await using var finalContext = database.CreateContext();
+            var preserved = await finalContext.Set<Vote>().AsNoTracking().SingleAsync(x => x.SiteId == 126282);
+            preserved.Source.Should().Be(VoteSource.Site, "реимпорт архива не затирает источник сайта");
+            preserved.Outcome.Should().Be(VoteOutcome.Accepted, "итог — факт сайта (ADR-9)");
+            preserved.AcceptPercentSite.Should().Be(88.4m, "процент принятия сайта сохраняется");
+            preserved.AcceptCountTotal.Should().Be(396, "суммы архива при этом обновляются");
+        }
+        finally
+        {
+            File.Delete(zipPath);
+            await database.DisposeAsync();
+        }
+    }
+
+    /// <summary>
+    /// Регресс (Б1): членство с null-границами заполняется датами голосований при реимпорте
+    /// </summary>
+    [SkippableFact]
+    public async Task Import_MembershipWithNullBounds_ExtendedByVotes()
+    {
+        var database = new DatabaseFixture();
+        await database.InitializeAsync();
+        Skip.If(database.SkipReason != null, database.SkipReason);
+        var zipPath = CreateMiniZip();
+        try
+        {
+            await RunImport(database.ConnectionString, zipPath, resume: false);
+
+            await using (var context = database.CreateContext())
+            {
+                var membership = await context.Set<DeputyFactionMembership>().FirstAsync();
+                membership.DateFrom = null;
+                membership.DateTo = null;
+                await context.SaveChangesAsync();
+            }
+
+            await RunImport(database.ConnectionString, zipPath, resume: false);
+
+            await using var finalContext = database.CreateContext();
+            var memberships = await finalContext.Set<DeputyFactionMembership>().AsNoTracking().ToListAsync();
+            memberships.Should().OnlyContain(x => x.DateFrom != null && x.DateTo != null && x.DateFrom <= x.DateTo,
+                "null-границы членства заполняются датами голосований");
+        }
+        finally
+        {
+            File.Delete(zipPath);
+            await database.DisposeAsync();
+        }
+    }
+
+    /// <summary>
+    /// Регресс (Б3): файл, ранее забракованный и ставший годным, импортируется,
+    /// карантин снимается и сверка не считает голосование дважды
+    /// </summary>
+    [SkippableFact]
+    public async Task Import_PreviouslyQuarantinedFileNowValid_QuarantineCleared()
+    {
+        var database = new DatabaseFixture();
+        await database.InitializeAsync();
+        Skip.If(database.SkipReason != null, database.SkipReason);
+        var (_, sourceJson) = FixtureEntry("archive_126282");
+        var node = JsonNode.Parse(sourceJson)!;
+        node["id"] = "999997";
+        node["title"] = string.Empty;
+        var invalidEntries = FixtureNames.Select(FixtureEntry).ToList();
+        invalidEntries.Add(("vote-master/poll/2024-03-13/999997.json", node.ToJsonString()));
+        var invalidZip = CreateZip(invalidEntries.ToArray());
+
+        node["title"] = "(третье чтение) О проекте федерального закона № 500091-8 \"О внесении изменений в статью 12\"";
+        var validEntries = FixtureNames.Select(FixtureEntry).ToList();
+        validEntries.Add(("vote-master/poll/2024-03-13/999997.json", node.ToJsonString()));
+        var validZip = CreateZip(validEntries.ToArray());
+        try
+        {
+            var first = await RunImport(database.ConnectionString, invalidZip, resume: false);
+            first.Quarantined.Should().Be(1);
+
+            var second = await RunImport(database.ConnectionString, validZip, resume: false);
+            second.Imported.Should().Be(5);
+            second.Quarantined.Should().Be(0);
+
+            await using var context = database.CreateContext();
+            var quarantine = await context.Set<ImportQuarantine>().SingleAsync();
+            quarantine.DeletedAt.Should().NotBeNull("успешный импорт снимает карантин с файла");
+            (await context.Set<Vote>().CountAsync()).Should().Be(5);
+
+            var report = await RunVerify(database.ConnectionString);
+            report.Rows.Single(x => x.Name == "Всего голосований").Actual.Should().Be(5, "снятый карантин не учитывается дважды");
+            report.QuarantineVotes.Should().Be(0);
+        }
+        finally
+        {
+            File.Delete(invalidZip);
+            File.Delete(validZip);
+            await database.DisposeAsync();
+        }
+    }
+
+    /// <summary>
+    /// Регресс (Б4): коллизия кодов неизвестных фракций разрешается суффиксом и не роняет пачку
+    /// </summary>
+    [SkippableFact]
+    public async Task Import_UnknownFactionCodeCollision_CreatesDistinctFactions()
+    {
+        var database = new DatabaseFixture();
+        await database.InitializeAsync();
+        Skip.If(database.SkipReason != null, database.SkipReason);
+        var entries = new[] { "archive_126282", "archive_18642" }.Select(name =>
+        {
+            var (entryName, json) = FixtureEntry(name);
+            var node = JsonNode.Parse(json)!;
+            var title = name == "archive_126282"
+                ? "Тестовая фракция с очень длинным названием номер один"
+                : "Тестовая фракция с очень длинным названием номер два";
+            foreach (var deputyVote in node["votes"]!.AsArray())
+            {
+                deputyVote!["deputy"]!["faction"]!["id"] = "99900001";
+                deputyVote!["deputy"]!["faction"]!["title"] = title;
+            }
+
+            return (entryName, node.ToJsonString());
+        }).ToArray();
+        var zipPath = CreateZip(entries);
+        try
+        {
+            var summary = await RunImport(database.ConnectionString, zipPath, resume: false);
+            summary.Imported.Should().Be(2, "коллизия кодов неизвестных фракций не роняет пачку");
+            summary.Quarantined.Should().Be(0);
+
+            await using var context = database.CreateContext();
+            var codes = await context.Set<Faction>().AsNoTracking()
+                .Where(x => x.Code.StartsWith("F99900001"))
+                .Select(x => x.Code)
+                .ToListAsync();
+            codes.Should().BeEquivalentTo(["F99900001", "F99900001_2"]);
+        }
+        finally
+        {
+            File.Delete(zipPath);
+            await database.DisposeAsync();
+        }
+    }
+
+    /// <summary>
+    /// Регресс (Б4): порядок файлов в архиве не хронологический — более старое голосование
+    /// не перезаписывает имя депутата, уточнённое более свежим
+    /// </summary>
+    [SkippableFact]
+    public async Task Import_OlderVoteLast_KeepsNewerDeputyName()
+    {
+        var database = new DatabaseFixture();
+        await database.InitializeAsync();
+        Skip.If(database.SkipReason != null, database.SkipReason);
+        var (_, baseJson) = FixtureEntry("archive_126282");
+        var newerNode = JsonNode.Parse(baseJson)!;
+        newerNode["id"] = "999995";
+        newerNode["datetime"] = "2024-03-14T15:01:13+0300";
+        newerNode["votes"]![0]!["deputy"]!["name"] = "Абакаров Хизри Магомедович (новое имя)";
+        var olderNode = JsonNode.Parse(baseJson)!;
+        olderNode["id"] = "999994";
+        var entries = new (string EntryName, string Json)[]
+        {
+            ("vote-master/poll/2024-03-14/999995.json", newerNode.ToJsonString()),
+            ("vote-master/poll/2024-03-13/999994.json", olderNode.ToJsonString()),
+        };
+        var zipPath = CreateZip(entries);
+        try
+        {
+            var summary = await RunImport(database.ConnectionString, zipPath, resume: false);
+            summary.Imported.Should().Be(2);
+
+            await using var context = database.CreateContext();
+            var deputy = await context.Set<Deputy>().AsNoTracking().SingleAsync(x => x.SiteId == 99113478);
+            deputy.FullName.Should().Be("Абакаров Хизри Магомедович (новое имя)", "более старое голосование не перезаписывает имя");
         }
         finally
         {
@@ -304,15 +511,30 @@ public sealed class ArchiveImporterTests
     private static async Task<DbCounts> CountDatabase(DatabaseFixture database)
     {
         await using var context = database.CreateContext();
+        var votes = context.Set<Vote>();
+        var deputyVotes = context.Set<DeputyVote>();
         return new DbCounts(
-            await context.Set<Vote>().CountAsync(),
-            await context.Set<DeputyVote>().CountAsync(),
+            await votes.CountAsync(),
+            await deputyVotes.CountAsync(),
             await context.Set<Deputy>().CountAsync(),
             await context.Set<FactionPeriod>().CountAsync(),
             await context.Set<DeputyFactionMembership>().CountAsync(),
             await context.Set<Bill>().CountAsync(),
-            await context.Set<ImportQuarantine>().CountAsync());
+            await context.Set<ImportQuarantine>().CountAsync(),
+            await votes.SumAsync(x => x.AcceptCountTotal),
+            await votes.SumAsync(x => x.DeclineCountTotal),
+            await votes.SumAsync(x => x.AbstainCountTotal),
+            await votes.SumAsync(x => x.NoneCountTotal),
+            await deputyVotes.CountAsync(x => x.Result == VoteResult.Accept),
+            await deputyVotes.CountAsync(x => x.Result == VoteResult.Decline),
+            await deputyVotes.CountAsync(x => x.Result == VoteResult.Abstain),
+            await deputyVotes.CountAsync(x => x.Result == VoteResult.None),
+            string.Join("|", await context.Set<Deputy>().OrderBy(x => x.SiteId).Select(x => x.FullName).ToListAsync()));
     }
 
-    private sealed record DbCounts(long Votes, long DeputyVotes, long Deputies, long Periods, long Memberships, long Bills, long Quarantine);
+    private sealed record DbCounts(
+        long Votes, long DeputyVotes, long Deputies, long Periods, long Memberships, long Bills, long Quarantine,
+        long AcceptTotal, long DeclineTotal, long AbstainTotal, long NoneTotal,
+        long DeputyAccept, long DeputyDecline, long DeputyAbstain, long DeputyNone,
+        string DeputyNames);
 }

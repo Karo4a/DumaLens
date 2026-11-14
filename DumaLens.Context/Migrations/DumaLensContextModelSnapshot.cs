@@ -269,7 +269,9 @@ namespace DumaLens.Context.Migrations
 
                     b.HasIndex("FactionPeriodId");
 
-                    b.HasIndex(new[] { "DeputyId", "FactionPeriodId" }, "IX_DeputyFactionMembership_DeputyId_FactionPeriodId");
+                    b.HasIndex(new[] { "DeputyId", "FactionPeriodId" }, "IX_DeputyFactionMembership_DeputyId_FactionPeriodId")
+                        .IsUnique()
+                        .HasFilter("\"DeletedAt\" IS NULL");
 
                     b.ToTable("DeputyFactionMemberships", (string)null);
                 });

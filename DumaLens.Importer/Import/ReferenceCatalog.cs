@@ -1,4 +1,3 @@
-using DumaLens.Common.Contracts;
 using DumaLens.Context.Contracts;
 using DumaLens.Entities;
 using DumaLens.Entities.ValidationConstants;
@@ -12,6 +11,9 @@ namespace DumaLens.Importer.Import;
 /// Каталог справочников импорта: кэширует депутатов, фракции, фракционные периоды, законопроекты
 /// и членства во фракциях, создаёт недостающие записи и уточняет границы периодов по данным голосований
 /// </summary>
+/// <remarks>
+/// Аудит созданных и изменённых сущностей проставляют репозитории записи
+/// </remarks>
 public sealed class ReferenceCatalog
 {
     private readonly IReader reader;
@@ -20,21 +22,20 @@ public sealed class ReferenceCatalog
     private readonly IFactionWriteRepository factionWriter;
     private readonly IFactionPeriodWriteRepository factionPeriodWriter;
     private readonly IDeputyFactionMembershipWriteRepository membershipWriter;
-    private readonly IDateTimeProvider dateTimeProvider;
     private readonly ImportLog log;
 
     private readonly List<ConvocationDbModel> convocations = [];
     private readonly Dictionary<string, Faction> factionsByCode = new(StringComparer.Ordinal);
     private readonly Dictionary<string, Faction> factionsByTitle = new(StringComparer.Ordinal);
     private readonly Dictionary<long, Deputy> deputiesBySiteId = [];
+    private readonly Dictionary<long, DateOnly> deputyLastVoteAt = [];
     private readonly Dictionary<(long SiteId, Guid ConvocationId), FactionPeriod> periodsByKey = [];
     private readonly Dictionary<string, Guid> billIdsByNumber = new(StringComparer.Ordinal);
     private readonly Dictionary<(Guid DeputyId, Guid PeriodId), DeputyFactionMembership> membershipsByKey = [];
     private readonly HashSet<Deputy> dirtyDeputies = [];
     private readonly HashSet<FactionPeriod> dirtyPeriods = [];
     private readonly HashSet<DeputyFactionMembership> dirtyMemberships = [];
-
-    private FactionCanonResolver canonResolver = null!;
+    private readonly FactionCanonResolver canonResolver;
 
     /// <summary>
     /// Конструктор
@@ -46,7 +47,6 @@ public sealed class ReferenceCatalog
         IFactionWriteRepository factionWriter,
         IFactionPeriodWriteRepository factionPeriodWriter,
         IDeputyFactionMembershipWriteRepository membershipWriter,
-        IDateTimeProvider dateTimeProvider,
         ImportLog log)
     {
         this.reader = reader;
@@ -55,8 +55,8 @@ public sealed class ReferenceCatalog
         this.factionWriter = factionWriter;
         this.factionPeriodWriter = factionPeriodWriter;
         this.membershipWriter = membershipWriter;
-        this.dateTimeProvider = dateTimeProvider;
         this.log = log;
+        canonResolver = new FactionCanonResolver(factionsByTitle, factionsByCode);
     }
 
     /// <summary>
@@ -84,8 +84,6 @@ public sealed class ReferenceCatalog
             factionsByCode[faction.Code] = faction;
             factionsByTitle[faction.Title] = faction;
         }
-
-        canonResolver = new FactionCanonResolver(factionsByTitle, factionsByCode);
 
         var periods = await reader.Read<FactionPeriod>().NotDeletedAt().ToListAsync(cancellationToken);
         foreach (var period in periods)
@@ -128,7 +126,7 @@ public sealed class ReferenceCatalog
     /// <summary>
     /// Найти или создать законопроект по номеру из заголовка голосования
     /// </summary>
-    public Guid? EnsureBill(string? number, DateTimeOffset now)
+    public Guid? EnsureBill(string? number)
     {
         if (number == null)
         {
@@ -144,8 +142,6 @@ public sealed class ReferenceCatalog
         {
             Id = Guid.NewGuid(),
             Number = number,
-            CreatedAt = now,
-            UpdatedAt = now,
         };
         billIdsByNumber[number] = bill.Id;
         billWriter.Add(bill);
@@ -153,18 +149,22 @@ public sealed class ReferenceCatalog
     }
 
     /// <summary>
-    /// Найти или создать депутата по идентификатору сайта; при смене имени — обновить имя
+    /// Найти или создать депутата по идентификатору сайта; имя уточняется по самому свежему голосованию
     /// </summary>
-    public Guid EnsureDeputy(long siteId, string fullName, DateTimeOffset now)
+    public Guid EnsureDeputy(long siteId, string fullName, DateOnly votedAt)
     {
         if (deputiesBySiteId.TryGetValue(siteId, out var deputy))
         {
-            if (!string.Equals(deputy.FullName, fullName, StringComparison.Ordinal))
+            // Порядок файлов в архиве не хронологический: более старое голосование имя не перезаписывает
+            if (!deputyLastVoteAt.TryGetValue(siteId, out var lastVoteAt) || votedAt >= lastVoteAt)
             {
-                deputy.FullName = fullName;
-                deputy.SortName = fullName;
-                deputy.UpdatedAt = now;
-                dirtyDeputies.Add(deputy);
+                deputyLastVoteAt[siteId] = votedAt;
+                if (!string.Equals(deputy.FullName, fullName, StringComparison.Ordinal))
+                {
+                    deputy.FullName = fullName;
+                    deputy.SortName = fullName;
+                    dirtyDeputies.Add(deputy);
+                }
             }
 
             return deputy.Id;
@@ -176,10 +176,9 @@ public sealed class ReferenceCatalog
             SiteId = siteId,
             FullName = fullName,
             SortName = fullName,
-            CreatedAt = now,
-            UpdatedAt = now,
         };
         deputiesBySiteId[siteId] = created;
+        deputyLastVoteAt[siteId] = votedAt;
         deputyWriter.Add(created);
         return created.Id;
     }
@@ -188,19 +187,19 @@ public sealed class ReferenceCatalog
     /// Найти или создать фракционный период по ключу «идентификатор фракции на сайте + созыв»;
     /// каноническая фракция определяется по названию, границы периода уточняются по датам голосований
     /// </summary>
-    public Guid EnsureFactionPeriod(long factionSiteId, string factionTitle, ConvocationDbModel convocation, DateOnly date, DateTimeOffset now)
+    public Guid EnsureFactionPeriod(long factionSiteId, string factionTitle, ConvocationDbModel convocation, DateOnly date)
     {
         var key = (factionSiteId, convocation.Id);
         if (periodsByKey.TryGetValue(key, out var period))
         {
-            ExtendPeriod(period, date, now);
+            ExtendPeriod(period, date);
             return period.Id;
         }
 
         var faction = canonResolver.Resolve(factionTitle);
         if (faction == null)
         {
-            faction = CreateUnknownFaction(factionSiteId, factionTitle, now);
+            faction = CreateUnknownFaction(factionSiteId, factionTitle);
         }
 
         period = new FactionPeriod
@@ -212,8 +211,6 @@ public sealed class ReferenceCatalog
             Title = factionTitle,
             DateFrom = date,
             DateTo = date,
-            CreatedAt = now,
-            UpdatedAt = now,
         };
         periodsByKey[key] = period;
         factionPeriodWriter.Add(period);
@@ -224,19 +221,19 @@ public sealed class ReferenceCatalog
     /// Учесть членство депутата во фракционном периоде на дату голосования:
     /// создать недостающее членство либо расширить его границы
     /// </summary>
-    public void TrackMembership(Guid deputyId, Guid periodId, DateOnly date, DateTimeOffset now)
+    public void TrackMembership(Guid deputyId, Guid periodId, DateOnly date)
     {
         var key = (deputyId, periodId);
         if (membershipsByKey.TryGetValue(key, out var membership))
         {
             var changed = false;
-            if (date < membership.DateFrom)
+            if (membership.DateFrom == null || date < membership.DateFrom)
             {
                 membership.DateFrom = date;
                 changed = true;
             }
 
-            if (date > membership.DateTo)
+            if (membership.DateTo == null || date > membership.DateTo)
             {
                 membership.DateTo = date;
                 changed = true;
@@ -244,7 +241,6 @@ public sealed class ReferenceCatalog
 
             if (changed)
             {
-                membership.UpdatedAt = now;
                 dirtyMemberships.Add(membership);
             }
 
@@ -258,8 +254,6 @@ public sealed class ReferenceCatalog
             FactionPeriodId = periodId,
             DateFrom = date,
             DateTo = date,
-            CreatedAt = now,
-            UpdatedAt = now,
         };
         membershipsByKey[key] = membership;
         membershipWriter.Add(membership);
@@ -290,7 +284,7 @@ public sealed class ReferenceCatalog
         dirtyMemberships.Clear();
     }
 
-    private void ExtendPeriod(FactionPeriod period, DateOnly date, DateTimeOffset now)
+    private void ExtendPeriod(FactionPeriod period, DateOnly date)
     {
         var changed = false;
         if (date < period.DateFrom)
@@ -307,12 +301,11 @@ public sealed class ReferenceCatalog
 
         if (changed)
         {
-            period.UpdatedAt = now;
             dirtyPeriods.Add(period);
         }
     }
 
-    private Faction CreateUnknownFaction(long factionSiteId, string factionTitle, DateTimeOffset now)
+    private Faction CreateUnknownFaction(long factionSiteId, string factionTitle)
     {
         var code = factionTitle.Length <= FactionValidationConstants.CodeMaxLength
             ? factionTitle
@@ -322,13 +315,19 @@ public sealed class ReferenceCatalog
             code = $"F{factionSiteId}";
         }
 
+        // Коллизия кодов разрешается суффиксом, иначе уникальный индекс уронит всю пачку
+        var suffix = 2;
+        while (factionsByCode.ContainsKey(code))
+        {
+            code = $"F{factionSiteId}_{suffix}";
+            suffix++;
+        }
+
         var faction = new Faction
         {
             Id = Guid.NewGuid(),
             Code = code,
             Title = factionTitle,
-            CreatedAt = now,
-            UpdatedAt = now,
         };
         factionsByCode[code] = faction;
         factionsByTitle[factionTitle] = faction;

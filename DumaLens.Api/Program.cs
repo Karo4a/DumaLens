@@ -83,13 +83,15 @@ public class Program
             var mapper = mapConfig.CreateMapper();
             return mapper;
         });
+        var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+            ?? ["http://localhost:5100", "https://localhost:5101"];
         builder.Services.AddCors(options =>
         {
             options.AddPolicy("AllowBlazorClient", policy =>
             {
-                policy.WithOrigins("http://localhost:5100", "https://localhost:5101")
-                      .AllowAnyHeader()
-                      .AllowAnyMethod();
+                policy.WithOrigins(allowedOrigins)
+                    .AllowAnyHeader()
+                    .AllowAnyMethod();
             });
         });
         var app = builder.Build();

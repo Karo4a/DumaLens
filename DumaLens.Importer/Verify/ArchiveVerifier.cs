@@ -3,6 +3,7 @@ using DumaLens.Entities;
 using DumaLens.Entities.Contracts.Enums;
 using DumaLens.Parsing.Contracts;
 using Microsoft.EntityFrameworkCore;
+using System.Globalization;
 
 namespace DumaLens.Importer.Verify;
 
@@ -94,7 +95,9 @@ public sealed class ArchiveVerifier
                 continue;
             }
 
-            var roman = RomanNumbers[convocation.Number - 1];
+            var roman = convocation.Number >= 1 && convocation.Number <= RomanNumbers.Length
+                ? RomanNumbers[convocation.Number - 1]
+                : convocation.Number.ToString(CultureInfo.InvariantCulture);
             report.Rows.Add(new ChecksumRow
             {
                 Name = $"Созыв {roman}: голосования",

@@ -181,12 +181,11 @@ public sealed class ArchiveImporter
 
     private async Task FlushBatch(List<BatchItem> batch, bool resume, ImportSummary summary, CancellationToken cancellationToken)
     {
-        var now = dateTimeProvider.UtcNow();
         var validItems = batch.Where(x => x.IsValid).ToList();
         var siteIds = validItems.Select(x => x.Parsed.SiteId).Distinct().ToList();
         var existingVotes = siteIds.Count == 0
             ? []
-            : await reader.Read<Vote>().Where(x => x.DeletedAt == null && siteIds.Contains(x.SiteId)).ToListAsync(cancellationToken);
+            : await reader.Read<Vote>().NotDeletedAt().Where(x => siteIds.Contains(x.SiteId)).ToListAsync(cancellationToken);
         var existingBySiteId = existingVotes.ToDictionary(x => x.SiteId);
 
         var invalidItems = batch.Where(x => !x.IsValid).ToList();
@@ -194,10 +193,20 @@ public sealed class ArchiveImporter
         var existingQuarantineFiles = invalidNames.Count == 0
             ? []
             : await reader.Read<ImportQuarantine>()
+                .NotDeletedAt()
                 .Where(x => x.SourceFile != null && invalidNames.Contains(x.SourceFile))
                 .Select(x => x.SourceFile!)
                 .ToListAsync(cancellationToken);
         var quarantinedFiles = existingQuarantineFiles.ToHashSet(StringComparer.Ordinal);
+
+        // Ранее забракованные файлы, ставшие годными: карантин снимается, чтобы сверка не считала их дважды
+        var validNames = validItems.Select(x => x.EntryName).ToList();
+        var staleQuarantine = validNames.Count == 0
+            ? []
+            : await reader.Read<ImportQuarantine>()
+                .NotDeletedAt()
+                .Where(x => x.SourceFile != null && validNames.Contains(x.SourceFile))
+                .ToListAsync(cancellationToken);
 
         await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
 
@@ -215,7 +224,7 @@ public sealed class ArchiveImporter
             var normalized = item.Normalized!;
             var convocation = item.Convocation!;
             var date = DateOnly.FromDateTime(parsed.VotedAt.DateTime);
-            var billId = catalog.EnsureBill(normalized.BillNumber, now);
+            var billId = catalog.EnsureBill(normalized.BillNumber);
 
             existingBySiteId.TryGetValue(parsed.SiteId, out var vote);
             var isNew = false;
@@ -225,7 +234,6 @@ public sealed class ArchiveImporter
                 vote = new Vote
                 {
                     Id = Guid.NewGuid(),
-                    CreatedAt = now,
                 };
             }
 
@@ -237,11 +245,14 @@ public sealed class ArchiveImporter
             vote.BillId = billId;
             vote.Stage = normalized.Stage;
             vote.StageRaw = normalized.StageRaw;
-            vote.Outcome = VoteOutcome.Unknown;
             vote.HasResults = parsed.HasResults;
-            vote.AcceptPercentSite = null;
-            vote.Source = VoteSource.Archive;
-            vote.UpdatedAt = now;
+            // Итог и процент — факты сайта (ADR-9): реимпорт архива их не затирает
+            if (isNew || vote.Source == VoteSource.Archive)
+            {
+                vote.Outcome = VoteOutcome.Unknown;
+                vote.AcceptPercentSite = null;
+                vote.Source = VoteSource.Archive;
+            }
 
             var acceptCount = 0;
             var declineCount = 0;
@@ -249,12 +260,12 @@ public sealed class ArchiveImporter
             var noneCount = 0;
             foreach (var deputyVote in parsed.DeputyVotes)
             {
-                var deputyId = catalog.EnsureDeputy(deputyVote.DeputySiteId, deputyVote.FullName, now);
+                var deputyId = catalog.EnsureDeputy(deputyVote.DeputySiteId, deputyVote.FullName, date);
                 Guid? periodId = null;
                 if (deputyVote.FactionSiteId.HasValue && deputyVote.FactionTitle != null)
                 {
-                    periodId = catalog.EnsureFactionPeriod(deputyVote.FactionSiteId.Value, deputyVote.FactionTitle, convocation, date, now);
-                    catalog.TrackMembership(deputyId, periodId.Value, date, now);
+                    periodId = catalog.EnsureFactionPeriod(deputyVote.FactionSiteId.Value, deputyVote.FactionTitle, convocation, date);
+                    catalog.TrackMembership(deputyId, periodId.Value, date);
                 }
 
                 switch (deputyVote.Result)
@@ -309,10 +320,18 @@ public sealed class ArchiveImporter
                 SiteId = item.Parsed.SiteId > 0 ? item.Parsed.SiteId : null,
                 Reason = TruncateReason(string.Join("; ", item.QuarantineReasons)),
                 RawJson = item.RawJson,
-                CreatedAt = now,
-                UpdatedAt = now,
             });
             summary.Quarantined++;
+        }
+
+        foreach (var record in staleQuarantine)
+        {
+            quarantineWriter.Delete(record);
+        }
+
+        if (staleQuarantine.Count > 0)
+        {
+            log.Info($"Снят карантин с {staleQuarantine.Count} файлов, успешно импортированных в этом проходе");
         }
 
         catalog.FlushUpdates();

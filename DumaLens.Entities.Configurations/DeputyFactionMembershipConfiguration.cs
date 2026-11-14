@@ -24,6 +24,8 @@ public class DeputyFactionMembershipConfiguration : IEntityTypeConfiguration<Dep
             .HasForeignKey(x => x.FactionPeriodId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasIndex(x => new { x.DeputyId, x.FactionPeriodId }, $"IX_{nameof(DeputyFactionMembership)}_{nameof(DeputyFactionMembership.DeputyId)}_{nameof(DeputyFactionMembership.FactionPeriodId)}");
+        builder.HasIndex(x => new { x.DeputyId, x.FactionPeriodId }, $"IX_{nameof(DeputyFactionMembership)}_{nameof(DeputyFactionMembership.DeputyId)}_{nameof(DeputyFactionMembership.FactionPeriodId)}")
+            .IsUnique()
+            .HasFilter($"\"{nameof(DeputyFactionMembership.DeletedAt)}\" IS NULL");
     }
 }

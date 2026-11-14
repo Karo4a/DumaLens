@@ -41,9 +41,10 @@ public static class CommonSpecs
     /// <summary>
     /// Возвращает <see cref="IReadOnlyCollection{TEntity}"/>
     /// </summary>
-    public static Task<IReadOnlyCollection<TEntity>> ToReadOnlyCollectionAsync<TEntity>(this IQueryable<TEntity> query,
+    public static async Task<IReadOnlyCollection<TEntity>> ToReadOnlyCollectionAsync<TEntity>(this IQueryable<TEntity> query,
         CancellationToken cancellationToken)
-        => query.ToListAsync(cancellationToken)
-            .ContinueWith(x => new ReadOnlyCollection<TEntity>(x.Result)
-                as IReadOnlyCollection<TEntity>, cancellationToken);
+    {
+        var list = await query.ToListAsync(cancellationToken);
+        return new ReadOnlyCollection<TEntity>(list);
+    }
 }
