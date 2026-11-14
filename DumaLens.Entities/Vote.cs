@@ -1,5 +1,5 @@
 ﻿using DumaLens.Entities.Contracts;
-using DumaLens.Entities.Enums;
+using DumaLens.Entities.Contracts.Enums;
 
 namespace DumaLens.Entities;
 

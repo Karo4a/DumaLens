@@ -1,0 +1,962 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ru" lang="ru">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="title" content="Результаты голосования по вопросам, вынесенным для открытого голосования за период с 12.10.2021 по 29.09.2026. – Система анализа результатов голосований на заседаниях Государственной Думы" />
+    <title>Результаты голосования по вопросам, вынесенным для открытого голосования за период с 12.10.2021 по 29.09.2026. – Система анализа результатов голосований на заседаниях Государственной Думы</title>
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="stylesheet" type="text/css" media="screen" href="/css/style.css?13" />
+	<!--[if IE 7]><link rel="stylesheet" type="text/css" media="screen,project" href="/css/ie7.css" /><![endif]-->
+	<!--[if IE 6]><link rel="stylesheet" type="text/css" media="screen,project" href="/css/ie6.css?2" />
+		<script type="text/javascript" src="/js/DD_belatedPNG_0.0.8a-min.js"></script>
+		<script type="text/javascript">
+			DD_belatedPNG.fix('#sf-show,.sort-menu li a.s-down,.sort-menu li a.s-up,.dpl-leg-2,.dpl-leg-1,.dpl-leg-3,.dpl-leg-4');
+		</script>
+	<![endif]-->
+    <!--[if lte IE 6]><script src="/js/ie6/warning.js"></script><script>window.onload=function(){e("/js/ie6/")}</script><![endif]-->
+    <script type="text/javascript" src="/js/jquery-1.6.1.min.js"></script>
+<script type="text/javascript" src="/js/jquery.selectbox-1.2.js"></script>
+<script type="text/javascript" src="/js/jquery.maskedinput-1.3.min.js"></script>
+<script type="text/javascript" src="/js/jquery-ui-1.8.14.custom.min.js"></script>
+<script type="text/javascript" src="/js/jquery-ui-datapicker-1.8.4.min.js"></script>
+<script type="text/javascript" src="/js/highcharts.js"></script>
+<script type="text/javascript" src="/js/script.js?12"></script>
+<script type="text/javascript" src="/js/swfobject.js"></script>
+  </head>
+  <body>
+    <div id="wrap">
+      <div id="logo"><a href="http://www.duma.gov.ru/">Государственная Дума России - Система анализа результатов голосований на заседаниях Государственной Думы</a></div>
+      <div id="header">Система анализа результатов голосований на заседаниях Государственной Думы</div>
+        
+<div class="search-form open">
+    <form action="" class="no-empty"><div>
+        <div>
+            <label>Созыв Государственной Думы:</label>
+            <div>
+              <select class="select" name="convocation" id="convocation">
+<option value="AAAAAAA9">9-й созыв (2026 — 2031 гг.)</option>
+<option value="AAAAAAA8" selected="selected">8-й созыв (2021 — 2026 гг.)</option>
+<option value="AAAAAAA7">7-й созыв (2016 — 2021 гг.)</option>
+<option value="AAAAAAA6">6-й созыв (2011 — 2016 гг.)</option>
+<option value="AAAAAAA5">5-й созыв (2007 — 2011 гг.)</option>
+<option value="AAAAAAA4">4-й созыв (2003 — 2007 гг.)</option>
+<option value="AAAAAAA3">3-й созыв (2000 — 2003 гг.)</option>
+<option value="AAAAAAA2">2-й созыв (1996 — 2000 гг.)</option>
+<option value="AAAAAAA1">1-й созыв (1994 — 1996 гг.)</option>
+</select>            </div>
+        </div>
+        <div>
+            <label>Дата заседания (голосования): <img class="quest" src="img/q.png" alt="Диапазон должен быть в пределах выбранного созыва" /></label>
+            <div><input class="calendar-field form-text-big" type="text" name="from" id="from" /> <i>&mdash;</i> <input class="calendar-field form-text-big" type="text" name="to" id="to" /></div>
+        </div>
+        <div>
+            <label>Номер законопроекта: <img class="quest" src="img/q.png" alt="Фильтр результатов голосований по номеру законопроекта" /></label>
+            <div><input class="form-text-big" type="text" name="number" id="number" /></div>
+        </div>
+        <div>
+            <label>Ключевые слова темы голосования: <img class="quest" src="img/q.png" alt="Все указанные слова будут входить в формулировку темы голосования" /></label>
+            <div><input class="form-text-big" type="text" name="keywords" id="keywords" /></div>
+        </div>
+        <div>
+            <label>Фракция Государственной Думы: <img class="quest" src="img/q.png" alt="Список фракций формируется в соответствии с выбранным созывом" /></label>
+            <div id="faction_wrap">
+              <select class="select" name="faction" id="faction">
+<option value="" selected="selected">Все фракции</option>
+<option value="72100029">Фракция Социалистической политической партии СПРАВЕДЛИВАЯ РОССИЯ</option>
+<option value="72100011">Депутаты, не входящие во фракции</option>
+<option value="72100024">Фракция Всероссийской политической партии &quot;ЕДИНАЯ РОССИЯ&quot;</option>
+<option value="72100004">Фракция КПРФ - политической партии КОММУНИСТИЧЕСКАЯ ПАРТИЯ РОССИЙСКОЙ ФЕДЕРАЦИИ</option>
+<option value="72100005">Фракция Политической партии ЛДПР - Либерально-демократической партии России</option>
+<option value="72100028">Фракция Политической партии &quot;НОВЫЕ ЛЮДИ&quot;</option>
+</select>            </div>
+        </div>
+        <div>
+            <label>Депутаты Государственной Думы: <img class="quest" src="img/q.png" alt="Список депутатов формируется в соответствии с выбранными созывом и фракцией" /></label>
+            <div id="deputy_wrap">
+              <select class="input-select" name="deputy" id="deputy">
+<option value="" selected="selected">Все депутаты</option>
+<option value="99113478" class="fact72100024">Абакаров Хизри Магомедович</option>
+<option value="99113559" class="fact72100024">Абрамченко Виктория Валериевна</option>
+<option value="99112936" class="fact72100024">Авдеев Александр Александрович</option>
+<option value="99111776" class="fact72100004">Авдеев Михаил Юрьевич</option>
+<option value="99113550" class="fact72100024">Аверов Дмитрий Львович</option>
+<option value="99113443" class="fact72100028">Авксентьева Сардана Владимировна</option>
+<option value="99111999" class="fact72100024">Агаев Бекхан Вахаевич</option>
+<option value="99109653" class="fact72100024">Азимов Рахим Азизбоевич</option>
+<option value="99113343" class="fact72100024">Аиткулова Эльвира Ринатовна</option>
+<option value="99100784" class="fact72100029">Аксаков Анатолий Геннадьевич</option>
+<option value="99113396" class="fact72100029">Аксёненко Александр Сергеевич</option>
+<option value="99113530" class="fact72100011">Алдаров Кузьма Романович</option>
+<option value="99113374" class="fact72100024">Алексеенко Николай Николаевич</option>
+<option value="99113397" class="fact72100004">Алехин Андрей Анатольевич</option>
+<option value="99111779" class="fact72100004">Алимова Ольга Николаевна</option>
+<option value="99113364" class="fact72100024">Алтухов Сергей Викторович</option>
+<option value="99112719" class="fact72100024">Альшевских Андрей Геннадьевич</option>
+<option value="99113353" class="fact72100004">Аммосов Петр Револьдович</option>
+<option value="99111780" class="fact72100029">Ананских Игорь Александрович</option>
+<option value="99113399" class="fact72100024">Аникеев Андрей Анатольевич</option>
+<option value="99110909" class="fact72100024">Аникеев Григорий Викторович</option>
+<option value="99113497" class="fact72100024">Антропенко Игорь Александрович</option>
+<option value="99113498" class="fact72100024">Ануфриева Ольга Николаевна</option>
+<option value="99113444" class="fact72100028">Арапов Георгий Константинович</option>
+<option value="99100640" class="fact72100004">Арефьев Николай Васильевич</option>
+<option value="99113377" class="fact72100024">Артамонова Валентина Николаевна</option>
+<option value="99109998" class="fact72100024">Аршба Отари Ионович</option>
+<option value="99112121" class="fact72100024 fact72100024">Аршинова Алёна Игоревна</option>
+<option value="99110911" class="fact72100004">Афонин Юрий Вячеславович</option>
+<option value="99113537" class="fact72100024">Аюпов Ринат Зайдулаевич</option>
+<option value="99110045" class="fact72100029">Бабаков Александр Михайлович</option>
+<option value="99113351" class="fact72100024">Бабашов Леонид Иванович</option>
+<option value="99113433" class="fact72100004">Бабич Иван Николаевич</option>
+<option value="99113414" class="fact72100024">Баженов Тимофей Тимофеевич</option>
+<option value="99112721" class="fact72100024">Байгускаров Зариф Закирович</option>
+<option value="99113528" class="fact72100024">Барахоев Бекхан Абдулхамидович</option>
+<option value="99113384" class="fact72100024">Басанский Антон Александрович</option>
+<option value="99111788" class="fact72100024">Баталина Ольга Юрьевна</option>
+<option value="99111789" class="fact72100024">Баталова Рима Акбердиновна</option>
+<option value="99112725" class="fact72100024">Бахарев Константин Михайлович</option>
+<option value="99112726" class="fact72100024">Бахметьев Виталий Викторович</option>
+<option value="99113341" class="fact72100024">Башанкаев Бадма Николаевич</option>
+<option value="99112728" class="fact72100024">Белик Дмитрий Анатольевич</option>
+<option value="99111791" class="fact72100029">Белоусов Вадим Владимирович</option>
+<option value="99112362" class="fact72100024">Белых Ирина Викторовна</option>
+<option value="99111793" class="fact72100004">Берулава Михаил Николаевич</option>
+<option value="99112937" class="fact72100024">Бессарабов Даниил Владимирович</option>
+<option value="99113014" class="fact72100024">Бессараб Светлана Викторовна</option>
+<option value="99113437" class="fact72100004">Бессонов Евгений Иванович</option>
+<option value="99112731" class="fact72100024">Бидонько Сергей Юрьевич</option>
+<option value="99111795" class="fact72100004">Бифов Анатолий Жамалович</option>
+<option value="99113479" class="fact72100024">Бичаев Артем Александрович</option>
+<option value="99112930" class="fact72100004">Блоцкий Владимир Николаевич</option>
+<option value="99112231" class="fact72100024">Богомаз Александр Васильевич</option>
+<option value="99110921" class="fact72100024">Богуславский Ирек Борисович</option>
+<option value="99112736" class="fact72100024">Бондаренко Елена Вениаминовна</option>
+<option value="99111420" class="fact72100024">Борисов Александр Александрович</option>
+<option value="99113536" class="fact72100024">Бородай Александр Юрьевич</option>
+<option value="99109981" class="fact72100024">Борцов Николай Иванович</option>
+<option value="99112739" class="fact72100024">Боярский Сергей Михайлович</option>
+<option value="99112740" class="fact72100024">Брыкин Николай Гаврилович</option>
+<option value="99112913" class="fact72100024">Будуев Николай Робертович</option>
+<option value="99100052" class="fact72100024">Булавинов Вадим Евгеньевич</option>
+<option value="99113505" class="fact72100024">Буранова Лариса Николаевна</option>
+<option value="99113401" class="fact72100024">Бурлаков Сергей Владимирович</option>
+<option value="99113487" class="fact72100029">Бурляев Николай Петрович</option>
+<option value="99111801" class="fact72100024">Бурматов Владимир Владимирович</option>
+<option value="99113506" class="fact72100024">Бутина Мария Валерьевна</option>
+<option value="99113419" class="fact72100024">Буцкая Татьяна Викторовна</option>
+<option value="99112023" class="fact72100024">Валеев Эрнест Абдулович</option>
+<option value="99110927" class="fact72100024">Валенчук Олег Дорианович</option>
+<option value="99111804" class="fact72100024">Валуев Николай Сергеевич</option>
+<option value="99109940" class="fact72100024">Васильев Владимир Абдуалиевич</option>
+<option value="99100492" class="fact72100004">Васильев Николай Иванович</option>
+<option value="99113538" class="fact72100024">Василькова Мария Викторовна</option>
+<option value="99113420" class="fact72100029">Вассерман Анатолий Александрович</option>
+<option value="99112745" class="fact72100024">Веллер Алексей Борисович</option>
+<option value="99113204" class="fact72100024">Веремеенко Сергей Алексеевич</option>
+<option value="99113456" class="fact72100024">Власова Вероника Валериевна</option>
+<option value="99112747" class="fact72100005 fact72100005">Власов Василий Максимович</option>
+<option value="99110929" class="fact72100024">Водолацкий Виктор Петрович</option>
+<option value="99113368" class="fact72100024">Водянов Роман Михайлович</option>
+<option value="99100829" class="fact72100024">Володин Вячеслав Викторович</option>
+<option value="99113375" class="fact72100024">Волоцков Алексей Анатольевич</option>
+<option value="99113354" class="fact72100024">Вольфсон Илья Светославович</option>
+<option value="99113560" class="fact72100029">Воробьев Александр Николаевич</option>
+<option value="99113408" class="fact72100024">Воробьев Андрей Викторович</option>
+<option value="99113491" class="fact72100024">Вороновский Анатолий Владимирович</option>
+<option value="99110932" class="fact72100024">Вторыгина Елена Андреевна</option>
+<option value="99111809" class="fact72100024">Выборный Анатолий Борисович</option>
+<option value="99110933" class="fact72100024">Вяткин Дмитрий Федорович</option>
+<option value="99110934" class="fact72100004">Гаврилов Сергей Анатольевич</option>
+<option value="99113346" class="fact72100024">Гаджиев Абдулхаким Кутбудинович</option>
+<option value="99111991" class="fact72100024">Гаджиев Мурад Станиславович</option>
+<option value="99113468" class="fact72100024">Гаджиев Руслан Гаджиевич</option>
+<option value="99113358" class="fact72100024">Гарин Олег Владимирович</option>
+<option value="99107687" class="fact72100029">Гартунг Валерий Карлович</option>
+<option value="99113336" class="fact72100024">Гасанов Джамаладин Набиевич</option>
+<option value="99111812" class="fact72100024">Геккиев Заур Далхатович</option>
+<option value="99112920" class="fact72100024">Германова Ольга Михайловна</option>
+<option value="99112753" class="fact72100024">Гетта Антон Александрович</option>
+<option value="99113344" class="fact72100024">Гильмутдинов Динар Загитович</option>
+<option value="99110085" class="fact72100024">Гильмутдинов Ильдар Ирекович</option>
+<option value="99113376" class="fact72100024">Гимбатов Андрей Петрович</option>
+<option value="99112754" class="fact72100024">Гладких Борис Михайлович</option>
+<option value="99113431" class="fact72100004">Глазкова Анжелика Егоровна</option>
+<option value="99113513" class="fact72100024">Говырин Алексей Борисович</option>
+<option value="99113501" class="fact72100024">Голиков Олег Александрович</option>
+<option value="99113403" class="fact72100024">Гончаров Николай Александрович</option>
+<option value="99113318" class="fact72100024">Гордеев Алексей Васильевич</option>
+<option value="99112916" class="fact72100024">Горелкин Антон Вадимович</option>
+<option value="99113522" class="fact72100024">Горохов Андрей Юрьевич</option>
+<option value="99113561" class="fact72100024">Горюханов Валерий Анатольевич</option>
+<option value="99113451" class="fact72100028">Горячева Ксения Александровна</option>
+<option value="99113531" class="fact72100011">Грачев Сергей Иванович</option>
+<option value="99100110" class="fact72100029">Грешневиков Анатолий Николаевич</option>
+<option value="99113362" class="fact72100029">Григорьев Юрий Иннокентьевич</option>
+<option value="99113450" class="fact72100028">Гулин Максим Алексеевич</option>
+<option value="99113454" class="fact72100024">Гурулёв Андрей Викторович</option>
+<option value="99113482" class="fact72100029 fact72100029">Гусев Дмитрий Геннадьевич</option>
+<option value="99111820" class="fact72100024">Гутенев Владимир Владимирович</option>
+<option value="99113489" class="fact72100028">Даванков Владислав Андреевич</option>
+<option value="99113345" class="fact72100024">Дамдинцурунов Вячеслав Анатольевич</option>
+<option value="99112914" class="fact72100024">Данчикова Галина Иннокентьевна</option>
+<option value="99110948" class="fact72100024">Делимханов Адам Султанович</option>
+<option value="99113084" class="fact72100029">Делягин Михаил Геннадьевич</option>
+<option value="99113447" class="fact72100028 fact72100028">Демин Александр Вячеславович</option>
+<option value="99110949" class="fact72100024">Демченко Иван Иванович</option>
+<option value="99112759" class="fact72100024">Дерябкин Виктор Ефимович</option>
+<option value="99112760" class="fact72100024">Дзюба Виктор Викторович</option>
+<option value="99111823" class="fact72100005">Диденко Алексей Николаевич</option>
+<option value="99113400" class="fact72100024">Димов Олег Дмитриевич</option>
+<option value="99100128" class="fact72100011">Дмитриева Оксана Генриховна</option>
+<option value="99112924" class="fact72100024">Догаев Ахмед Шамханович</option>
+<option value="99113475" class="fact72100024">Долуда Николай Александрович</option>
+<option value="99113365" class="fact72100024">Дорошенко Андрей Николаевич</option>
+<option value="99100799" class="fact72100029">Драпеко Елена Григорьевна</option>
+<option value="99112603" class="fact72100004">Дробот Мария Владимировна</option>
+<option value="99113541" class="fact72100024">Дрожжина Юлия Николаевна</option>
+<option value="99113367" class="fact72100024">Дроздов Александр Сергеевич</option>
+<option value="99113515" class="fact72100024">Дьяконова Татьяна Ивановна</option>
+<option value="99113429" class="fact72100024">Евтюхова Елена Александровна</option>
+<option value="99113551" class="fact72100004">Егоров Владислав Иванович</option>
+<option value="99110020" class="fact72100004">Езерский Николай Николаевич</option>
+<option value="99110954" class="fact72100024">Езубов Алексей Петрович</option>
+<option value="99113549" class="fact72100024">Еремин Сергей Васильевич</option>
+<option value="99111831" class="fact72100024">Ефимов Виталий Борисович</option>
+<option value="99100142" class="fact72100005">Жириновский Владимир Вольфович</option>
+<option value="99100145" class="fact72100024">Жуков Александр Дмитриевич</option>
+<option value="99111836" class="fact72100005">Журавлев Алексей Александрович</option>
+<option value="99110958" class="fact72100024">Журова Светлана Сергеевна</option>
+<option value="99112028" class="fact72100024">Завальный Павел Николаевич</option>
+<option value="99109953" class="fact72100024">Заварзин Виктор Михайлович</option>
+<option value="99113520" class="fact72100024">Занко Ольга Николаевна</option>
+<option value="99100158" class="fact72100024">Затулин Константин Федорович</option>
+<option value="99113411" class="fact72100024">Захаров Константин Юрьевич</option>
+<option value="99110967" class="fact72100024">Зубарев Виктор Владиславович</option>
+<option value="99100171" class="fact72100004">Зюганов Геннадий Андреевич</option>
+<option value="99113395" class="fact72100024">Иванинский Олег Иванович</option>
+<option value="99113552" class="fact72100024">Иванов Анатолий Петрович</option>
+<option value="99112209" class="fact72100024">Иванов Владимир Валерьевич</option>
+<option value="99112771" class="fact72100024">Иванов Максим Анатольевич</option>
+<option value="99113493" class="fact72100024">Иванов Максим Евгеньевич</option>
+<option value="99100666" class="fact72100004">Иванов Николай Николаевич</option>
+<option value="99111988" class="fact72100004">Иванюженков Борис Викторович</option>
+<option value="99113369" class="fact72100024">Ивенских Ирина Валентиновна</option>
+<option value="99113525" class="fact72100024">Ивлев Леонид Григорьевич</option>
+<option value="99107896" class="fact72100024">Игнатов Виктор Александрович</option>
+<option value="99100862" class="fact72100024">Игошин Игорь Николаевич</option>
+<option value="99113539" class="fact72100024">Ильиных Владимир Алексеевич</option>
+<option value="99111844" class="fact72100024">Ильтяков Александр Владимирович</option>
+<option value="99100749" class="fact72100024">Исаев Андрей Константинович</option>
+<option value="99113434" class="fact72100004">Исаков Владимир Павлович</option>
+<option value="99112773" class="fact72100024">Исламов Дмитрий Викторович</option>
+<option value="99113485" class="fact72100029">Кабышев Сергей Владимирович</option>
+<option value="99112775" class="fact72100024">Кавинов Артем Александрович</option>
+<option value="99113511" class="fact72100024">Каденков Дмитрий Михайлович</option>
+<option value="99112127" class="fact72100024">Казакова Ольга Михайловна</option>
+<option value="99109906" class="fact72100024">Казаков Виктор Алексеевич</option>
+<option value="99112776" class="fact72100004">Казанков Сергей Иванович</option>
+<option value="99111543" class="fact72100004">Калашников Леонид Иванович</option>
+<option value="99113508" class="fact72100024">Калимуллин Рустам Галиуллович</option>
+<option value="99113435" class="fact72100004">Камнев Георгий Петрович</option>
+<option value="99112778" class="fact72100024">Канаев Алексей Валерианович</option>
+<option value="99113481" class="fact72100029">Каноков Тимур Борисович</option>
+<option value="99113554" class="fact72100024">Каптелинина Наталья Олеговна</option>
+<option value="99107738" class="fact72100024">Кара-оол Шолбан Валерьевич</option>
+<option value="99111852" class="fact72100005">Каргинов Сергей Генрихович</option>
+<option value="99112018" class="fact72100024">Карлов Георгий Александрович</option>
+<option value="99109942" class="fact72100024">Кармазина Раиса Васильевна</option>
+<option value="99111854" class="fact72100024">Карпов Анатолий Евгеньевич</option>
+<option value="99113471" class="fact72100024">Картаполов Андрей Валериевич</option>
+<option value="99113512" class="fact72100024">Кастюкевич Игорь Юрьевич</option>
+<option value="99111855" class="fact72100024">Качкаев Павел Рюрикович</option>
+<option value="99110050" class="fact72100004">Кашин Владимир Иванович</option>
+<option value="99110982" class="fact72100024">Квитка Иван Иванович</option>
+<option value="99111399" class="fact72100024">Кидяев Виктор Борисович</option>
+<option value="99113379" class="fact72100024">Кизеев Михаил Владимирович</option>
+<option value="99113553" class="fact72100029">Ким Марина Евгеньевна</option>
+<option value="99113394" class="fact72100024">Кирьянов Артем Юрьевич</option>
+<option value="99113457" class="fact72100024">Киселёв Михаил Сергеевич</option>
+<option value="99113532" class="fact72100024">Кисляков Михаил Леонидович</option>
+<option value="99113461" class="fact72100024">Кобылкин Дмитрий Николаевич</option>
+<option value="99112782" class="fact72100024">Ковпак Лев Игоревич</option>
+<option value="99109966" class="fact72100024">Коган Александр Борисович</option>
+<option value="99111859" class="fact72100024">Когогина Альфия Гумаровна</option>
+<option value="99112784" class="fact72100024">Козловский Александр Николаевич</option>
+<option value="99111862" class="fact72100024">Колесник Андрей Иванович</option>
+<option value="99110985" class="fact72100024">Колесников Олег Алексеевич</option>
+<option value="99103008" class="fact72100004">Коломейцев Николай Васильевич</option>
+<option value="99113387" class="fact72100024">Колунов Сергей Владимирович</option>
+<option value="99111338" class="fact72100004">Комоцкий Борис Олегович</option>
+<option value="99112011" class="fact72100024">Кононов Владимир Михайлович</option>
+<option value="99110990" class="fact72100004">Корниенко Алексей Викторович</option>
+<option value="99113382" class="fact72100024">Коробова Ольга Владимировна</option>
+<option value="99112787" class="fact72100024">Костенко Наталья Васильевна</option>
+<option value="99112432" class="fact72100024">Коткин Сергей Николаевич</option>
+<option value="99111865" class="fact72100004">Кочиев Роберт Иванович</option>
+<option value="99113441" class="fact72100005">Кошелев Владимир Алексеевич</option>
+<option value="99109598" class="fact72100024">Кравченко Денис Борисович</option>
+<option value="99113380" class="fact72100024">Красноштанов Антон Алексеевич</option>
+<option value="99112015" class="fact72100024">Красов Андрей Леонидович</option>
+<option value="99100761" class="fact72100024">Крашенинников Павел Владимирович</option>
+<option value="99111867" class="fact72100024">Кривоносов Сергей Владимирович</option>
+<option value="99113453" class="fact72100024">Кузнецова Анна Юрьевна</option>
+<option value="99113094" class="fact72100029 fact72100029">Кузнецов Андрей Анатольевич</option>
+<option value="99113542" class="fact72100029">Кузнецов Дмитрий Вадимович</option>
+<option value="99113524" class="fact72100024">Кузнецов Эдуард Анатольевич</option>
+<option value="99112794" class="fact72100024">Кузьмин Михаил Владимирович</option>
+<option value="99111873" class="fact72100005">Кулиева Василина Васильевна</option>
+<option value="99111875" class="fact72100004">Кумин Вадим Валентинович</option>
+<option value="99111877" class="fact72100024">Курбанов Ризван Даниялович</option>
+<option value="99112795" class="fact72100004">Куринный Алексей Владимирович</option>
+<option value="99112992" class="fact72100024">Кусайко Татьяна Алексеевна</option>
+<option value="99113402" class="fact72100024">Кушнарев Виталий Васильевич</option>
+<option value="99112796" class="fact72100024">Лавриненко Алексей Федорович</option>
+<option value="99112797" class="fact72100024">Ламейкин Дмитрий Викторович</option>
+<option value="99113484" class="fact72100029 fact72100029">Лантратова Яна Валерьевна</option>
+<option value="99113465" class="fact72100024">Ларионова Татьяна Петровна</option>
+<option value="99113393" class="fact72100024">Лебедев Евгений Викторович</option>
+<option value="99112037" class="fact72100004">Лебедев Олег Александрович</option>
+<option value="99100819" class="fact72100004">Левченко Сергей Георгиевич</option>
+<option value="99113422" class="fact72100028">Леонов Олег Юрьевич</option>
+<option value="99113299" class="fact72100005 fact72100005 fact72100005">Леонов Сергей Дмитриевич</option>
+<option value="99113392" class="fact72100024">Лесун Анатолий Фёдорович</option>
+<option value="99113529" class="fact72100024">Лечхаджиев Руслан Абдулвахиевич</option>
+<option value="99107579" class="fact72100011 fact72100029">Лисицын Анатолий Иванович</option>
+<option value="99110294" class="fact72100024">Лисовский Сергей Федорович</option>
+<option value="99113474" class="fact72100024">Лихачев Виталий Викторович</option>
+<option value="99113427" class="fact72100024">Лобач Татьяна Георгиевна</option>
+<option value="99113372" class="fact72100024">Логинов Вячеслав Юрьевич</option>
+<option value="99112800" class="fact72100024">Лоор Иван Иванович</option>
+<option value="99113366" class="fact72100024">Лоцманов Дмитрий Николаевич</option>
+<option value="99110999" class="fact72100005 fact72100005">Луговой Андрей Константинович</option>
+<option value="99113509" class="fact72100024">Любарский Роман Валерьевич</option>
+<option value="99113324" class="fact72100004">Лябихов Роман Михайлович</option>
+<option value="99113421" class="fact72100024">Мажуга Александр Георгиевич</option>
+<option value="99113389" class="fact72100024">Майданов Денис Васильевич</option>
+<option value="99100248" class="fact72100024">Макаров Андрей Михайлович</option>
+<option value="99113473" class="fact72100024">Макаров Вячеслав Серафимович</option>
+<option value="99112483" class="fact72100024">Макиев Зураб Гайозович</option>
+<option value="99112805" class="fact72100024">Максимов Александр Александрович</option>
+<option value="99111892" class="fact72100024">Марданшин Рафаэль Мирхатимович</option>
+<option value="99113378" class="fact72100024">Марков Андрей Павлович</option>
+<option value="99113312" class="fact72100005">Марков Евгений Владимирович</option>
+<option value="99111895" class="fact72100004">Мархаев Вячеслав Михайлович</option>
+<option value="99112807" class="fact72100011 fact72100024">Марченко Евгений Евгеньевич</option>
+<option value="99113407" class="fact72100004">Матвеев Михаил Николаевич</option>
+<option value="99113459" class="fact72100024">Матвейчев Олег Анатольевич</option>
+<option value="99113557" class="fact72100024">Матыцин Олег Васильевич</option>
+<option value="99113533" class="fact72100011">Машков Владимир Львович</option>
+<option value="99104023" class="fact72100004">Мельников Иван Иванович</option>
+<option value="99113472" class="fact72100024">Метелев Артем Павлович</option>
+<option value="99113466" class="fact72100024">Метшин Айдар Раисович</option>
+<option value="99112810" class="fact72100024">Милонов Виталий Валентинович</option>
+<option value="99107891" class="fact72100029">Миронов Сергей Михайлович</option>
+<option value="99113349" class="fact72100004">Михайлов Олег Алексеевич</option>
+<option value="99100452" class="fact72100024">Морозов Олег Викторович</option>
+<option value="99113469" class="fact72100024">Морозов Сергей Иванович</option>
+<option value="99111904" class="fact72100024">Москвичев Евгений Сергеевич</option>
+<option value="99110036" class="fact72100005">Мусатов Иван Михайлович</option>
+<option value="99100781" class="fact72100024">Муцоев Зелимхан Аликоевич</option>
+<option value="99112912" class="fact72100024">Назарова Наталья Васильевна</option>
+<option value="99111015" class="fact72100005">Напсо Юрий Аисович</option>
+<option value="99113440" class="fact72100005 fact72100005 fact72100005">Наумов Станислав Александрович</option>
+<option value="99100713" class="fact72100024">Неверов Сергей Иванович</option>
+<option value="99113502" class="fact72100024">Немкин Антон Игоревич</option>
+<option value="99113548" class="fact72100024">Нестеренко Юрий Юрьевич</option>
+<option value="99113442" class="fact72100028">Нечаев Алексей Геннадьевич</option>
+<option value="99112819" class="fact72100024">Николаева Виктория Викторовна</option>
+<option value="99112817" class="fact72100024">Николаев Николай Петрович</option>
+<option value="99100295" class="fact72100024">Никонов Вячеслав Алексеевич</option>
+<option value="99111912" class="fact72100029">Нилов Олег Анатольевич</option>
+<option value="99110213" class="fact72100011 fact72100005 fact72100005">Нилов Ярослав Евгеньевич</option>
+<option value="99113418" class="fact72100024">Нифантьев Евгений Олегович</option>
+<option value="99112820" class="fact72100024">Новиков Владимир Михайлович</option>
+<option value="99111018" class="fact72100004">Новиков Дмитрий Георгиевич</option>
+<option value="99113030" class="fact72100005">Новиков Дмитрий Павлович</option>
+<option value="99113486" class="fact72100029">Новичков Николай Владимирович</option>
+<option value="99113476" class="fact72100024">Нурбагандов Нурбаганд Магомедович</option>
+<option value="99113356" class="fact72100024">Нуриев Марат Абдулхаевич</option>
+<option value="99110214" class="fact72100004">Обухов Сергей Павлович</option>
+<option value="99113352" class="fact72100024">Оглоблина Юлия Васильевна</option>
+<option value="99112105" class="fact72100024">Огуль Леонид Анатольевич</option>
+<option value="99113381" class="fact72100024">Оргеева Марина Эдуардовна</option>
+<option value="99113463" class="fact72100024">Орлова Наталья Алексеевна</option>
+<option value="99112938" class="fact72100004">Осадчий Николай Иванович</option>
+<option value="99104578" class="fact72100004">Останина Нина Александровна</option>
+<option value="99113413" class="fact72100024">Павлов Владимир Викторович</option>
+<option value="99113126" class="fact72100005">Пайкин Борис Романович</option>
+<option value="99113439" class="fact72100005">Панеш Каплан Мугдинович</option>
+<option value="99113390" class="fact72100024">Панин Геннадий Олегович</option>
+<option value="99110102" class="fact72100024">Панков Николай Васильевич</option>
+<option value="99112828" class="fact72100004">Пантелеев Сергей Михайлович</option>
+<option value="99112974" class="fact72100024">Панькина Ирина Александровна</option>
+<option value="99113545" class="fact72100024">Парфенов Андрей Борисович</option>
+<option value="99112829" class="fact72100004">Парфенов Денис Андреевич</option>
+<option value="99112830" class="fact72100024">Пахомов Сергей Александрович</option>
+<option value="99113416" class="fact72100028">Певцов Дмитрий Анатольевич</option>
+<option value="99113363" class="fact72100024">Первышов Евгений Алексеевич</option>
+<option value="99111920" class="fact72100024">Петров Александр Петрович</option>
+<option value="99113496" class="fact72100024">Петров Вячеслав Анатольевич</option>
+<option value="99111028" class="fact72100024">Петров Сергей Валериевич</option>
+<option value="99109613" class="fact72100024">Петров Юрий Александрович</option>
+<option value="99112834" class="fact72100024">Петрунин Николай Юрьевич</option>
+<option value="99107708" class="fact72100024">Пивненко Валентина Николаевна</option>
+<option value="99113315" class="fact72100024">Пилипенко Ольга Васильевна</option>
+<option value="99112031" class="fact72100024">Пинский Виктор Витальевич</option>
+<option value="99113039" class="fact72100024">Пирог Дмитрий Юрьевич</option>
+<option value="99112835" class="fact72100024">Пискарев Василий Иванович</option>
+<option value="99100316" class="fact72100024">Плотников Владимир Николаевич</option>
+<option value="99113449" class="fact72100028">Плякин Владимир Владимирович</option>
+<option value="99113430" class="fact72100024">Погорелый Дмитрий Викторович</option>
+<option value="99113470" class="fact72100024">Полуянова Наталия Владимировна</option>
+<option value="99113534" class="fact72100024">Полякова Алла Викторовна</option>
+<option value="99112837" class="fact72100024">Поляков Александр Алексеевич</option>
+<option value="99112242" class="fact72100024">Пономарев Аркадий Николаевич</option>
+<option value="99113415" class="fact72100024">Попов Евгений Георгиевич</option>
+<option value="99113480" class="fact72100029">Прилепин Евгений Николаевич</option>
+<option value="99111929" class="fact72100024">Прокопьев Александр Сергеевич</option>
+<option value="99113432" class="fact72100004">Прокофьев Артём Вячеславович</option>
+<option value="99113360" class="fact72100004">Прусакова Мария Николаевна</option>
+<option value="99113342" class="fact72100024">Птицын Роман Викторович</option>
+<option value="99113417" class="fact72100024">Разворотнева Светлана Викторовна</option>
+<option value="99100601" class="fact72100004">Рашкин Валерий Федорович</option>
+<option value="99112841" class="fact72100024">Ревенко Евгений Васильевич</option>
+<option value="99100886" class="fact72100024">Резник Владислав Матусович</option>
+<option value="99112003" class="fact72100029">Ремезков Александр Александрович</option>
+<option value="99111931" class="fact72100024">Ресин Владимир Иосифович</option>
+<option value="99113526" class="fact72100024">Родина Виктория Сергеевна</option>
+<option value="99111035" class="fact72100024">Роднина Ирина Константиновна</option>
+<option value="99112642" class="fact72100024">Романенко Роман Юрьевич</option>
+<option value="99112842" class="fact72100024">Романов Михаил Валентинович</option>
+<option value="99100702" class="fact72100024">Руденский Игорь Николаевич</option>
+<option value="99113423" class="fact72100024">Румянцев Александр Григорьевич</option>
+<option value="99113516" class="fact72100024">Румянцев Никита Геннадьевич</option>
+<option value="99113492" class="fact72100024">Рябцева Жанна Анатольевна</option>
+<option value="99109963" class="fact72100024">Саблин Дмитрий Вадимович</option>
+<option value="99111936" class="fact72100024">Савельев Дмитрий Иванович</option>
+<option value="99105318" class="fact72100004">Савицкая Светлана Евгеньевна</option>
+<option value="99110084" class="fact72100024">Савченко Олег Владимирович</option>
+<option value="99113359" class="fact72100024">Салаева Алла Леонидовна</option>
+<option value="99113458" class="fact72100024">Самокиш Владимир Игоревич</option>
+<option value="99113322" class="fact72100024">Самокутяев Александр Михайлович</option>
+<option value="99113555" class="fact72100028">Самылин Ярослав Алексеевич</option>
+<option value="99112001" class="fact72100024">Саралиев Шамсаил Юнусович</option>
+<option value="99113412" class="fact72100024">Саранова Юлия Владимировна</option>
+<option value="99113357" class="fact72100024">Сарыглар Айдын Николаевич</option>
+<option value="99111939" class="fact72100005">Свинцов Андрей Николаевич</option>
+<option value="99111047" class="fact72100005">Свистунов Аркадий Николаевич</option>
+<option value="99111048" class="fact72100005">Свищев Дмитрий Александрович</option>
+<option value="99111049" class="fact72100005">Селезнев Валерий Сергеевич</option>
+<option value="99112852" class="fact72100024">Селиверстов Виктор Валентинович</option>
+<option value="99100759" class="fact72100029 fact72100029">Семигин Геннадий Юрьевич</option>
+<option value="99113464" class="fact72100024">Сенин Владимир Борисович</option>
+<option value="99109163" class="fact72100024">Сидякин Александр Геннадьевич</option>
+<option value="99110096" class="fact72100024">Симановский Леонид Яковлевич</option>
+<option value="99113371" class="fact72100024">Симигин Павел Владимирович</option>
+<option value="99111945" class="fact72100004">Синельщиков Юрий Петрович</option>
+<option value="99113438" class="fact72100005">Сипягин Владимир Владимирович</option>
+<option value="99112685" class="fact72100024">Ситников Алексей Владимирович</option>
+<option value="99113361" class="fact72100024">Скачков Александр Анатольевич</option>
+<option value="99112858" class="fact72100024">Скляр Геннадий Иванович</option>
+<option value="99100696" class="fact72100024">Скоч Андрей Владимирович</option>
+<option value="99112859" class="fact72100024">Скриванов Дмитрий Станиславович</option>
+<option value="99113546" class="fact72100028">Скрозникова Анна Валерьевна</option>
+<option value="99111704" class="fact72100024">Скруг Валерий Степанович</option>
+<option value="99100776" class="fact72100005 fact72100005">Слуцкий Леонид Эдуардович</option>
+<option value="99113306" class="fact72100024">Смирнов Виктор Владимирович</option>
+<option value="99105719" class="fact72100004">Смолин Олег Николаевич</option>
+<option value="99113436" class="fact72100004">Соболев Виктор Иванович</option>
+<option value="99113319" class="fact72100024">Сокол Сергей Михайлович</option>
+<option value="99113426" class="fact72100024">Соловьев Сергей Анатольевич</option>
+<option value="99113517" class="fact72100024">Солодовников Иван Александрович</option>
+<option value="99112861" class="fact72100024">Соломатина Татьяна Васильевна</option>
+<option value="99113373" class="fact72100024">Спиридонов Александр Юрьевич</option>
+<option value="99113510" class="fact72100024">Станкевич Юрий Аркадьевич</option>
+<option value="99111057" class="fact72100024">Старшинов Михаил Евгеньевич</option>
+<option value="99113404" class="fact72100024">Стенякина Екатерина Петровна</option>
+<option value="99113409" class="fact72100024">Стрелюхин Александр Михайлович</option>
+<option value="99113488" class="fact72100004">Сулейманов Ренат Исмаилович</option>
+<option value="99111950" class="fact72100005">Сухарев Иван Константинович</option>
+<option value="99112652" class="fact72100005">Сысоев Владимир Владимирович</option>
+<option value="99112866" class="fact72100024">Таймазов Артур Борисович</option>
+<option value="99111951" class="fact72100004">Тайсаев Казбек Куцукович</option>
+<option value="99111061" class="fact72100024">Тарасенко Михаил Васильевич</option>
+<option value="99113452" class="fact72100028">Тарбаев Сангаджи Андреевич</option>
+<option value="99113347" class="fact72100024">Татриев Муслим Барисович</option>
+<option value="99112007" class="fact72100024">Тен Сергей Юрьевич</option>
+<option value="99111063" class="fact72100029">Терентьев Александр Васильевич</option>
+<option value="99111064" class="fact72100024">Терентьев Михаил Борисович</option>
+<option value="99112025" class="fact72100024">Терешкова Валентина Владимировна</option>
+<option value="99113388" class="fact72100024">Терюшков Роман Игоревич</option>
+<option value="99113424" class="fact72100024">Тетердинко Александр Павлович</option>
+<option value="99112126" class="fact72100024">Тимофеева Ольга Викторовна</option>
+<option value="99109943" class="fact72100024">Ткачев Алексей Николаевич</option>
+<option value="99113543" class="fact72100028">Ткачёв Антон Олегович</option>
+<option value="99113391" class="fact72100024">Толмачев Александр Романович</option>
+<option value="99112869" class="fact72100024">Толстой Петр Олегович</option>
+<option value="99113467" class="fact72100024">Топилин Максим Анатольевич</option>
+<option value="99109957" class="fact72100024">Третьяк Владислав Александрович</option>
+<option value="99113406" class="fact72100024">Трифонов Андрей Федорович</option>
+<option value="99111067" class="fact72100029">Тумусов Федот Семёнович</option>
+<option value="99112650" class="fact72100024">Туров Артём Викторович</option>
+<option value="99112871" class="fact72100024">Тутова Лариса Николаевна</option>
+<option value="99113544" class="fact72100004">Удальцова Анастасия Олеговна</option>
+<option value="99113348" class="fact72100024">Узденов Джашарбек Борисович</option>
+<option value="99113547" class="fact72100024">Узденов Солтан Джашарбекович</option>
+<option value="99113477" class="fact72100024">Умаханов Сайгидпаша Дарбишевич</option>
+<option value="99113462" class="fact72100024">Утяшева Римма Амировна</option>
+<option value="99113398" class="fact72100024">Фадина Оксана Николаевна</option>
+<option value="99112873" class="fact72100024">Фаррахов Айрат Закиевич</option>
+<option value="99100398" class="fact72100024">Федоров Евгений Алексеевич</option>
+<option value="99112009" class="fact72100024">Федяев Павел Михайлович</option>
+<option value="99111374" class="fact72100024">Фетисов Вячеслав Александрович</option>
+<option value="99113279" class="fact72100004">Филатова Ирина Анатольевна</option>
+<option value="99113385" class="fact72100024">Фомичев Вячеслав Васильевич</option>
+<option value="99112710" class="fact72100024">Фролова Тамара Ивановна</option>
+<option value="99113527" class="fact72100024">Хамзаев Бийсултан Султанбиевич</option>
+<option value="99113448" class="fact72100028">Хамитов Амир Махсудович</option>
+<option value="99100407" class="fact72100004">Харитонов Николай Михайлович</option>
+<option value="99113383" class="fact72100024">Харченко Екатерина Владимировна</option>
+<option value="99113562" class="fact72100005">Харченко Мария Борисовна</option>
+<option value="99112927" class="fact72100024">Хасанов Мурат Русланович</option>
+<option value="99109912" class="fact72100024">Хинштейн Александр Евсеевич</option>
+<option value="99109949" class="fact72100029">Хованская Галина Петровна</option>
+<option value="99110089" class="fact72100024">Хор Глеб Яковлевич</option>
+<option value="99113405" class="fact72100024">Хубезов Дмитрий Анатольевич</option>
+<option value="99113425" class="fact72100024">Цед Николай Григорьевич</option>
+<option value="99113535" class="fact72100024">Цунаева Елена Моисеевна</option>
+<option value="99113386" class="fact72100024">Чаплин Никита Юрьевич</option>
+<option value="99113446" class="fact72100028">Чемерис Роза Басировна</option>
+<option value="99111967" class="fact72100029">Чепа Алексей Васильевич</option>
+<option value="99112879" class="fact72100024">Чепиков Сергей Владимирович</option>
+<option value="99112564" class="fact72100005">Чернышов Борис Александрович</option>
+<option value="99113350" class="fact72100024">Черняк Алексей Юрьевич</option>
+<option value="99109921" class="fact72100024">Чижов Сергей Викторович</option>
+<option value="99100416" class="fact72100024">Чилингаров Артур Николаевич</option>
+<option value="99113490" class="fact72100028">Чудаев Сергей Дмитриевич</option>
+<option value="99110033" class="fact72100005">Шайхутдинов Рифат Габдулхакович</option>
+<option value="99112711" class="fact72100024">Шаманов Владимир Анатольевич</option>
+<option value="99112885" class="fact72100004">Шаргунов Сергей Александрович</option>
+<option value="99111972" class="fact72100029">Швецов Василий Георгиевич</option>
+<option value="99112886" class="fact72100024">Швыткин Юрий Николаевич</option>
+<option value="99112887" class="fact72100024">Шеремет Михаил Сергеевич</option>
+<option value="99113445" class="fact72100028">Шилкин Григорий Владимирович</option>
+<option value="99113316" class="fact72100024">Шипулин Антон Владимирович</option>
+<option value="99111695" class="fact72100024">Школкина Надежда Васильевна</option>
+<option value="99112890" class="fact72100024">Шолохов Александр Михайлович</option>
+<option value="99111645" class="fact72100024">Шубин Игорь Николаевич</option>
+<option value="99113428" class="fact72100024">Шувалов Вадим Николаевич</option>
+<option value="99113556" class="fact72100024">Шульгинов Николай Григорьевич</option>
+<option value="99111086" class="fact72100024">Шхагошев Адальби Люлевич</option>
+<option value="99112894" class="fact72100004">Щапов Михаил Викторович</option>
+<option value="99113514" class="fact72100024">Щеглов Николай Михайлович</option>
+<option value="99113370" class="fact72100024">Щербаков Александр Владимирович</option>
+<option value="99111981" class="fact72100004">Ющенко Александр Андреевич</option>
+<option value="99113355" class="fact72100024">Ягафаров Азат Фердинандович</option>
+<option value="99113290" class="fact72100024">Якубовский Александр Владимирович</option>
+<option value="99112899" class="fact72100024">Ямпольская Елена Александровна</option>
+<option value="99111093" class="fact72100024">Яровая Ирина Анатольевна</option>
+<option value="99113127" class="fact72100024">Яхнюк Сергей Васильевич</option>
+</select>            </div>
+        </div>
+        <div class="sf-submit">
+            <span class="submit-big"><span><input type="submit" value="Найти" /></span></span>
+            <span class="submit-big"><span><input type="reset" class="reset" value="Сбросить" /></span></span>
+        </div>
+        </div>
+        <input type="hidden" name="sort" value="date_desc"/>
+    </form>
+	<span id="sf-show" class="act"></span>
+</div>
+<script>
+  var convocationStartDate = "12.10.2021";
+  var convocationEndDate = "29.09.2026";
+</script>
+<div id="main" class="p-link-status">
+    <h1>Результаты голосования по вопросам, вынесенным для открытого голосования за период с 12.10.2021 по 29.09.2026.</h1>
+    <div class="sort-box">
+        <div class="sb-left">Показаны результаты: с 1 по 21 из 16689</div>
+        <div class="sb-right">
+             <a href="#" id="print-link">Версия для печати</a>
+            <div class="sort-menu">
+                <ul>
+                                        <li><a href="/?convocation=AAAAAAA8&page=1&sort=date_asc" class="s-act s-down">По дате</a></li>
+                                                            <li><a href="/?convocation=AAAAAAA8&page=1&sort=result_desc">По результатам</a></li>
+                                    </ul>
+            </div>
+            <div>Сортировать по:</div>
+        </div><div class="cl"></div>
+    </div>
+    <div class="date-head"><div>27.07.2026</div></div>
+    <div class="item"><div>
+        <div class="item-left">
+		   <div class="time">10:10:17</div>
+           <a href="/vote/135715">(за основу) О проекте порядка работы Государственной Думы на 27 июля 2026 года</a>
+        </div>
+        <div class="item-right">
+
+          
+						<div class="green"><b>Принят</b> <span>|</span> За: 421 чел (94%)</div>
+				<div>Против: 0, Воздержалось: 0</div>
+		
+                </div>
+    </div></div>
+    <div class="item each"><div>
+        <div class="item-left">
+		   <div class="time">10:11:03</div>
+           <a href="/vote/135716">(в целом) О проекте порядка работы Государственной Думы на 27 июля 2026 года</a>
+        </div>
+        <div class="item-right">
+
+          
+						<div class="green"><b>Принят</b> <span>|</span> За: 421 чел (94%)</div>
+				<div>Против: 0, Воздержалось: 0</div>
+		
+                </div>
+    </div></div>
+    <div class="date-head"><div>23.07.2026</div></div>
+    <div class="item"><div>
+        <div class="item-left">
+		   <div class="time">12:56:54</div>
+           <a href="/vote/135668">(за основу) О проекте порядка работы Государственной Думы на 23 июля 2026 года</a>
+        </div>
+        <div class="item-right">
+
+          
+						<div class="green"><b>Принят</b> <span>|</span> За: 407 чел (90%)</div>
+				<div>Против: 0, Воздержалось: 0</div>
+		
+                </div>
+    </div></div>
+    <div class="item each"><div>
+        <div class="item-left">
+		   <div class="time">12:58:43</div>
+           <a href="/vote/135669">(в целом) О проекте порядка работы Государственной Думы на 23 июля 2026 года</a>
+        </div>
+        <div class="item-right">
+
+          
+						<div class="green"><b>Принят</b> <span>|</span> За: 406 чел (90%)</div>
+				<div>Против: 0, Воздержалось: 1</div>
+		
+                </div>
+    </div></div>
+    <div class="item"><div>
+        <div class="item-left">
+		   <div class="time">13:02:14</div>
+           <a href="/vote/135670">(2 чтение таб. 1 принятые поправки) О проекте федерального закона № 1259321-8 "О внесении изменения в Федеральный закон "О введении в действие Жилищного кодекса Российской Федерации" (в части обеспечения гарантий жилищных прав отдельных категорий граждан)</a>
+        </div>
+        <div class="item-right">
+
+          
+						<div class="green"><b>Принят</b> <span>|</span> За: 386 чел (86%)</div>
+				<div>Против: 0, Воздержалось: 0</div>
+		
+                </div>
+    </div></div>
+    <div class="item each"><div>
+        <div class="item-left">
+		   <div class="time">13:02:48</div>
+           <a href="/vote/135671">(2 чтение таб. 2 отклонённые поправки) О проекте федерального закона № 1259321-8 "О внесении изменения в Федеральный закон "О введении в действие Жилищного кодекса Российской Федерации" (в части обеспечения гарантий жилищных прав отдельных категорий граждан)</a>
+        </div>
+        <div class="item-right">
+
+          
+						<div class="green"><b>Принят</b> <span>|</span> За: 351 чел (78%)</div>
+				<div>Против: 0, Воздержалось: 0</div>
+		
+                </div>
+    </div></div>
+    <div class="item"><div>
+        <div class="item-left">
+		   <div class="time">13:03:17</div>
+           <a href="/vote/135672">(2 чтение) О проекте федерального закона № 1259321-8 "О внесении изменения в Федеральный закон "О введении в действие Жилищного кодекса Российской Федерации" (в части обеспечения гарантий жилищных прав отдельных категорий граждан)</a>
+        </div>
+        <div class="item-right">
+
+          
+						<div class="green"><b>Принят</b> <span>|</span> За: 399 чел (89%)</div>
+				<div>Против: 0, Воздержалось: 0</div>
+		
+                </div>
+    </div></div>
+    <div class="item each"><div>
+        <div class="item-left">
+		   <div class="time">13:06:35</div>
+           <a href="/vote/135673">(3 чтение) О проекте федерального закона № 1259321-8 "О внесении изменения в Федеральный закон "О введении в действие Жилищного кодекса Российской Федерации" (в части обеспечения гарантий жилищных прав отдельных категорий граждан)</a>
+        </div>
+        <div class="item-right">
+
+          
+						<div class="green"><b>Принят</b> <span>|</span> За: 403 чел (90%)</div>
+				<div>Против: 0, Воздержалось: 0</div>
+		
+                </div>
+    </div></div>
+    <div class="item"><div>
+        <div class="item-left">
+		   <div class="time">13:09:05</div>
+           <a href="/vote/135674">(2 чтение таб. 1 принятые поправки) О проекте федерального закона № 1214554-8 "О внесении изменений в отдельные законодательные акты Российской Федерации" (в части организации персонифицированного учета медицинской помощи, оказываемой ветеранам боевых действий и членам их семей)</a>
+        </div>
+        <div class="item-right">
+
+          
+						<div class="green"><b>Принят</b> <span>|</span> За: 399 чел (89%)</div>
+				<div>Против: 0, Воздержалось: 1</div>
+		
+                </div>
+    </div></div>
+    <div class="item each"><div>
+        <div class="item-left">
+		   <div class="time">13:09:35</div>
+           <a href="/vote/135675">(2 чтение) О проекте федерального закона № 1214554-8 "О внесении изменений в отдельные законодательные акты Российской Федерации" (в части организации персонифицированного учета медицинской помощи, оказываемой ветеранам боевых действий и членам их семей)</a>
+        </div>
+        <div class="item-right">
+
+          
+						<div class="green"><b>Принят</b> <span>|</span> За: 393 чел (87%)</div>
+				<div>Против: 0, Воздержалось: 0</div>
+		
+                </div>
+    </div></div>
+    <div class="item"><div>
+        <div class="item-left">
+		   <div class="time">13:13:16</div>
+           <a href="/vote/135676">(3 чтение) О проекте федерального закона № 1214554-8 "О внесении изменений в отдельные законодательные акты Российской Федерации" (в части организации персонифицированного учета медицинской помощи, оказываемой ветеранам боевых действий и членам их семей)</a>
+        </div>
+        <div class="item-right">
+
+          
+						<div class="green"><b>Принят</b> <span>|</span> За: 402 чел (89%)</div>
+				<div>Против: 0, Воздержалось: 0</div>
+		
+                </div>
+    </div></div>
+    <div class="item each"><div>
+        <div class="item-left">
+		   <div class="time">13:14:54</div>
+           <a href="/vote/135677">(2 чтение таб. 1 принятые поправки) О проекте федерального закона № 1236122-8 "О внесении изменений в статьи 3 и 4 Федерального закона "О ветеранах" (об отнесении к ветеранам боевых действий лиц, принимавших участие в проведении работ по поиску, обезвреживанию и (или) уничтожению взрывоопасных предметов)</a>
+        </div>
+        <div class="item-right">
+
+          
+						<div class="green"><b>Принят</b> <span>|</span> За: 401 чел (89%)</div>
+				<div>Против: 0, Воздержалось: 0</div>
+		
+                </div>
+    </div></div>
+    <div class="item"><div>
+        <div class="item-left">
+		   <div class="time">13:15:26</div>
+           <a href="/vote/135678">(2 чтение таб. 2 отклонённые поправки) О проекте федерального закона № 1236122-8 "О внесении изменений в статьи 3 и 4 Федерального закона "О ветеранах" (об отнесении к ветеранам боевых действий лиц, принимавших участие в проведении работ по поиску, обезвреживанию и (или) уничтожению взрывоопасных предметов)</a>
+        </div>
+        <div class="item-right">
+
+          
+						<div class="green"><b>Принят</b> <span>|</span> За: 311 чел (69%)</div>
+				<div>Против: 22, Воздержалось: 0</div>
+		
+                </div>
+    </div></div>
+    <div class="item each"><div>
+        <div class="item-left">
+		   <div class="time">13:15:59</div>
+           <a href="/vote/135679">(2 чтение) О проекте федерального закона № 1236122-8 "О внесении изменений в статьи 3 и 4 Федерального закона "О ветеранах" (об отнесении к ветеранам боевых действий лиц, принимавших участие в проведении работ по поиску, обезвреживанию и (или) уничтожению взрывоопасных предметов)</a>
+        </div>
+        <div class="item-right">
+
+          
+						<div class="green"><b>Принят</b> <span>|</span> За: 401 чел (89%)</div>
+				<div>Против: 0, Воздержалось: 0</div>
+		
+                </div>
+    </div></div>
+    <div class="item"><div>
+        <div class="item-left">
+		   <div class="time">13:22:53</div>
+           <a href="/vote/135680">(3 чтение) О проекте федерального закона № 1236122-8 "О внесении изменений в статьи 3 и 4 Федерального закона "О ветеранах" (об отнесении к ветеранам боевых действий лиц, принимавших участие в проведении работ по поиску, обезвреживанию и (или) уничтожению взрывоопасных предметов)</a>
+        </div>
+        <div class="item-right">
+
+          
+						<div class="green"><b>Принят</b> <span>|</span> За: 406 чел (90%)</div>
+				<div>Против: 0, Воздержалось: 0</div>
+		
+                </div>
+    </div></div>
+    <div class="item each"><div>
+        <div class="item-left">
+		   <div class="time">13:26:55</div>
+           <a href="/vote/135681">(2 чтение таб. 1 принятые поправки) О проекте федерального закона № 1192071-8 "О внесении изменений в Федеральный закон "О ветеранах" (о праве ветеранов боевых действий на применение вспомогательных репродуктивных технологий)</a>
+        </div>
+        <div class="item-right">
+
+          
+						<div class="green"><b>Принят</b> <span>|</span> За: 396 чел (88%)</div>
+				<div>Против: 0, Воздержалось: 0</div>
+		
+                </div>
+    </div></div>
+    <div class="item"><div>
+        <div class="item-left">
+		   <div class="time">13:27:27</div>
+           <a href="/vote/135682">(2 чтение) О проекте федерального закона № 1192071-8 "О внесении изменений в Федеральный закон "О ветеранах" (о праве ветеранов боевых действий на применение вспомогательных репродуктивных технологий)</a>
+        </div>
+        <div class="item-right">
+
+          
+						<div class="green"><b>Принят</b> <span>|</span> За: 394 чел (88%)</div>
+				<div>Против: 0, Воздержалось: 0</div>
+		
+                </div>
+    </div></div>
+    <div class="item each"><div>
+        <div class="item-left">
+		   <div class="time">13:28:38</div>
+           <a href="/vote/135683">(3 чтение) О проекте федерального закона № 1192071-8 "О внесении изменений в Федеральный закон "О ветеранах" (о праве ветеранов боевых действий на применение вспомогательных репродуктивных технологий)</a>
+        </div>
+        <div class="item-right">
+
+          
+						<div class="green"><b>Принят</b> <span>|</span> За: 391 чел (87%)</div>
+				<div>Против: 0, Воздержалось: 0</div>
+		
+                </div>
+    </div></div>
+    <div class="item"><div>
+        <div class="item-left">
+		   <div class="time">13:30:17</div>
+           <a href="/vote/135684">(2 чтение таб. 1 принятые поправки) О проекте федерального закона № 1192039-8 "О внесении изменения в статью 169 Семейного кодекса Российской Федерации" (в части уточнения порядка установления происхождения ребенка, рожденного в результате применения вспомогательных репродуктивных технологий)</a>
+        </div>
+        <div class="item-right">
+
+          
+						<div class="green"><b>Принят</b> <span>|</span> За: 395 чел (88%)</div>
+				<div>Против: 0, Воздержалось: 1</div>
+		
+                </div>
+    </div></div>
+    <div class="item each"><div>
+        <div class="item-left">
+		   <div class="time">13:30:45</div>
+           <a href="/vote/135685">(2 чтение) О проекте федерального закона № 1192039-8 "О внесении изменения в статью 169 Семейного кодекса Российской Федерации" (в части уточнения порядка установления происхождения ребенка, рожденного в результате применения вспомогательных репродуктивных технологий)</a>
+        </div>
+        <div class="item-right">
+
+          
+						<div class="green"><b>Принят</b> <span>|</span> За: 398 чел (88%)</div>
+				<div>Против: 0, Воздержалось: 0</div>
+		
+                </div>
+    </div></div>
+</div>
+<div class="page-nave-count page-nave-count-top">Показаны: с 1 по 21 из 16689</div>
+<div class="page-nave">
+    <table><tr>
+        <td>
+        <span class="page-nave-prev pg-disabled"><span>предыдущая</span></span>
+</td>
+        <td><span class="page-nave-act" href="#">1</span></td>
+        <td><a class="delta-1" href="/?convocation=AAAAAAA8&page=2">2</a></td>
+        <td><a class="delta-2" href="/?convocation=AAAAAAA8&page=3">3</a></td>
+        <td><a class="delta-3" href="/?convocation=AAAAAAA8&page=4">4</a></td>
+        <td><a class="delta-4" href="/?convocation=AAAAAAA8&page=5">5</a></td>
+        <td><a class="delta-5" href="/?convocation=AAAAAAA8&page=6">6</a></td>
+        <td><a class="delta-6" href="/?convocation=AAAAAAA8&page=7">7</a></td>
+        <td><a class="delta-7" href="/?convocation=AAAAAAA8&page=8">8</a></td>
+        <td><span class="page-nave-mid" href="#">...</span></td>
+        <td><a class="delta-2" href="/?convocation=AAAAAAA8&page=833">833</a></td>
+        <td><a class="delta-1" href="/?convocation=AAAAAAA8&page=834">834</a></td>
+        <td><a class="delta-0" href="/?convocation=AAAAAAA8&page=835">835</a></td>
+        <td>
+        <a class="page-nave-next" href="/?convocation=AAAAAAA8&page=2"><span>следующая</span></a>
+        </td>
+    </tr></table>
+</div>
+<script>
+  var statsUrl = "\/stats?convocation=AAAAAAA8";
+  var basicUrl = "http:\/\/vote.duma.gov.ru\/?convocation=AAAAAAA8&page=1";
+    
+  $(function(){
+	var curIndex = -1;
+    sessionDays = {"2021-10-12":1,"2021-10-14":1,"2021-10-19":1,"2021-10-21":1,"2021-10-26":1,"2021-10-28":1,"2021-11-09":1,"2021-11-11":1,"2021-11-16":1,"2021-11-17":1,"2021-11-18":1,"2021-11-23":1,"2021-11-24":1,"2021-11-25":1,"2021-12-07":1,"2021-12-08":1,"2021-12-09":1,"2021-12-14":1,"2021-12-15":1,"2021-12-16":1,"2021-12-17":1,"2021-12-21":1,"2021-12-22":1,"2022-01-18":1,"2022-01-20":1,"2022-01-25":1,"2022-01-26":1,"2022-02-15":1,"2022-02-16":1,"2022-02-22":1,"2022-03-04":1,"2022-03-10":1,"2022-03-11":1,"2022-03-22":1,"2022-03-23":1,"2022-04-05":1,"2022-04-06":1,"2022-04-07":1,"2022-04-19":1,"2022-04-20":1,"2022-04-21":1,"2022-05-17":1,"2022-05-18":1,"2022-05-19":1,"2022-05-24":1,"2022-05-25":1,"2022-06-07":1,"2022-06-08":1,"2022-06-09":1,"2022-06-14":1,"2022-06-15":1,"2022-06-21":1,"2022-06-22":1,"2022-06-28":1,"2022-06-29":1,"2022-06-30":1,"2022-07-05":1,"2022-07-06":1,"2022-07-15":1,"2022-09-13":1,"2022-09-14":1,"2022-09-20":1,"2022-09-21":1,"2022-09-27":1,"2022-09-28":1,"2022-10-03":1,"2022-10-04":1,"2022-10-18":1,"2022-10-19":1,"2022-10-26":1,"2022-10-27":1,"2022-11-08":1,"2022-11-09":1,"2022-11-10":1,"2022-11-15":1,"2022-11-16":1,"2022-11-17":1,"2022-11-22":1,"2022-11-23":1,"2022-11-24":1,"2022-12-06":1,"2022-12-07":1,"2022-12-08":1,"2022-12-13":1,"2022-12-14":1,"2022-12-15":1,"2022-12-20":1,"2022-12-21":1,"2022-12-22":1,"2023-01-17":1,"2023-01-18":1,"2023-01-19":1,"2023-01-24":1,"2023-01-25":1,"2023-02-07":1,"2023-02-08":1,"2023-02-09":1,"2023-02-14":1,"2023-02-15":1,"2023-02-16":1,"2023-02-22":1,"2023-02-28":1,"2023-03-01":1,"2023-03-02":1,"2023-03-14":1,"2023-03-15":1,"2023-03-16":1,"2023-03-21":1,"2023-03-22":1,"2023-03-23":1,"2023-04-04":1,"2023-04-05":1,"2023-04-06":1,"2023-04-11":1,"2023-04-12":1,"2023-04-13":1,"2023-04-18":1,"2023-04-19":1,"2023-04-20":1,"2023-05-16":1,"2023-05-17":1,"2023-05-18":1,"2023-05-23":1,"2023-05-24":1,"2023-05-25":1,"2023-05-30":1,"2023-05-31":1,"2023-06-01":1,"2023-06-13":1,"2023-06-14":1,"2023-06-20":1,"2023-06-21":1,"2023-06-22":1,"2023-06-27":1,"2023-06-28":1,"2023-06-29":1,"2023-07-11":1,"2023-07-12":1,"2023-07-13":1,"2023-07-14":1,"2023-07-18":1,"2023-07-19":1,"2023-07-20":1,"2023-07-21":1,"2023-07-25":1,"2023-07-26":1,"2023-09-19":1,"2023-09-20":1,"2023-09-21":1,"2023-09-26":1,"2023-09-27":1,"2023-09-28":1,"2023-10-10":1,"2023-10-11":1,"2023-10-12":1,"2023-10-17":1,"2023-10-18":1,"2023-10-19":1,"2023-10-24":1,"2023-10-25":1,"2023-10-26":1,"2023-10-31":1,"2023-11-01":1,"2023-11-02":1,"2023-11-07":1,"2023-11-08":1,"2023-11-09":1,"2023-11-14":1,"2023-11-15":1,"2023-11-16":1,"2023-11-17":1,"2023-11-28":1,"2023-11-29":1,"2023-11-30":1,"2023-12-05":1,"2023-12-06":1,"2023-12-07":1,"2023-12-12":1,"2023-12-13":1,"2023-12-14":1,"2023-12-15":1,"2024-01-16":1,"2024-01-17":1,"2024-01-18":1,"2024-01-23":1,"2024-01-24":1,"2024-01-25":1,"2024-01-30":1,"2024-01-31":1,"2024-02-01":1,"2024-02-13":1,"2024-02-14":1,"2024-02-15":1,"2024-02-20":1,"2024-02-21":1,"2024-02-27":1,"2024-02-28":1,"2024-03-12":1,"2024-03-13":1,"2024-03-19":1,"2024-03-20":1,"2024-03-26":1,"2024-03-27":1,"2024-04-02":1,"2024-04-03":1,"2024-04-09":1,"2024-04-10":1,"2024-04-11":1,"2024-05-06":1,"2024-05-10":1,"2024-05-13":1,"2024-05-14":1,"2024-05-21":1,"2024-05-22":1,"2024-05-28":1,"2024-05-29":1,"2024-06-11":1,"2024-06-18":1,"2024-06-19":1,"2024-06-20":1,"2024-06-25":1,"2024-06-26":1,"2024-07-03":1,"2024-07-04":1,"2024-07-09":1,"2024-07-10":1,"2024-07-23":1,"2024-07-24":1,"2024-07-25":1,"2024-07-30":1,"2024-07-31":1,"2024-09-17":1,"2024-09-18":1,"2024-09-24":1,"2024-09-25":1,"2024-09-26":1,"2024-10-01":1,"2024-10-02":1,"2024-10-15":1,"2024-10-16":1,"2024-10-17":1,"2024-10-22":1,"2024-10-23":1,"2024-10-24":1,"2024-10-29":1,"2024-10-30":1,"2024-11-12":1,"2024-11-13":1,"2024-11-14":1,"2024-11-19":1,"2024-11-20":1,"2024-11-21":1,"2024-11-26":1,"2024-11-27":1,"2024-12-10":1,"2024-12-11":1,"2024-12-12":1,"2024-12-17":1,"2024-12-18":1,"2025-01-14":1,"2025-01-15":1,"2025-01-21":1,"2025-01-22":1,"2025-01-28":1,"2025-01-29":1,"2025-02-11":1,"2025-02-12":1,"2025-02-13":1,"2025-02-18":1,"2025-02-19":1,"2025-02-25":1,"2025-02-26":1,"2025-03-04":1,"2025-03-05":1,"2025-03-18":1,"2025-03-19":1,"2025-03-20":1,"2025-03-25":1,"2025-03-26":1,"2025-04-01":1,"2025-04-02":1,"2025-04-03":1,"2025-04-08":1,"2025-04-09":1,"2025-05-13":1,"2025-05-14":1,"2025-05-20":1,"2025-05-21":1,"2025-05-22":1,"2025-05-27":1,"2025-05-28":1,"2025-06-10":1,"2025-06-11":1,"2025-06-17":1,"2025-06-18":1,"2025-06-24":1,"2025-06-25":1,"2025-07-08":1,"2025-07-09":1,"2025-07-10":1,"2025-07-15":1,"2025-07-16":1,"2025-07-17":1,"2025-07-22":1,"2025-07-23":1,"2025-09-16":1,"2025-09-17":1,"2025-09-23":1,"2025-09-24":1,"2025-09-25":1,"2025-10-07":1,"2025-10-08":1,"2025-10-14":1,"2025-10-15":1,"2025-10-16":1,"2025-10-21":1,"2025-10-22":1,"2025-10-28":1,"2025-10-29":1,"2025-10-30":1,"2025-11-11":1,"2025-11-12":1,"2025-11-13":1,"2025-11-18":1,"2025-11-19":1,"2025-11-20":1,"2025-12-02":1,"2025-12-03":1,"2025-12-09":1,"2025-12-10":1,"2025-12-16":1,"2025-12-17":1,"2025-12-18":1,"2025-12-23":1,"2026-01-13":1,"2026-01-14":1,"2026-01-20":1,"2026-01-21":1,"2026-01-27":1,"2026-01-28":1,"2026-02-10":1,"2026-02-11":1,"2026-02-17":1,"2026-02-18":1,"2026-02-25":1,"2026-02-26":1,"2026-03-11":1,"2026-03-12":1,"2026-03-17":1,"2026-03-18":1,"2026-03-19":1,"2026-03-24":1,"2026-03-25":1,"2026-03-26":1,"2026-04-14":1,"2026-04-15":1,"2026-04-21":1,"2026-04-22":1,"2026-05-13":1,"2026-05-14":1,"2026-05-26":1,"2026-05-27":1,"2026-06-09":1,"2026-06-10":1,"2026-06-23":1,"2026-06-24":1,"2026-07-07":1,"2026-07-08":1,"2026-07-21":1,"2026-07-22":1,"2026-07-23":1,"2026-07-27":1};
+	$(window).scroll(function(){
+	  var i, len, scrollTop = $(window).scrollTop();
+      var dateElements = $('.date-head');
+      len = dateElements.length;
+	  for (i = 0; i < dateElements.length; i++)
+	  {
+		if ($(dateElements[i]).offset().top > scrollTop)
+		  break;
+	  }
+	  if (i < len && $(dateElements[i]).offset().top <= scrollTop + 45)
+		i = 0;
+	  i--;
+	  if (curIndex != i)
+	  {
+		var element;
+		if (curIndex >= 0)
+		{
+		  element = $('div', dateElements[curIndex]);
+		  element.removeClass('top-fixed');
+		}
+		if (i >= 0)
+		{
+		  element = $('div', dateElements[i]);
+		  element.addClass('top-fixed');
+		}
+		curIndex = i;
+	  }
+	});
+
+    $('#print-link').click(function(){
+        var url = basicUrl;
+        if (url.indexOf('?') >= 0)
+            url += '&';
+        else
+            url += '?';
+        url += 'print';
+
+        if ($('.link-statis>div>span').hasClass('act'))
+        {
+            url += '&stats';
+        }
+        
+        $(this).attr('href', url);
+        return true;
+    });
+  });
+</script>
+      <div id="foot">
+		<div>© Государственная Дума Федерального Собрания Российской Федерации, 2026</div>
+		<span><a href="http://www.duma.gov.ru/">www.duma.gov.ru</a> (1)</span>
+      </div>
+    </div>
+    <!-- Yandex.Metrika counter -->
+<script type="text/javascript">
+(function (d, w, c) {
+    (w[c] = w[c] || []).push(function() {
+        try {
+            w.yaCounter18506329 = new Ya.Metrika({id:18506329,
+                    clickmap:true,
+                    trackLinks:true,
+                    accurateTrackBounce:true});
+        } catch(e) { }
+    });
+
+    var n = d.getElementsByTagName("script")[0],
+        s = d.createElement("script"),
+        f = function () { n.parentNode.insertBefore(s, n); };
+    s.type = "text/javascript";
+    s.async = true;
+    s.src = (d.location.protocol == "https:" ? "https:" : "http:") + "//mc.yandex.ru/metrika/watch.js";
+
+    if (w.opera == "[object Opera]") {
+        d.addEventListener("DOMContentLoaded", f, false);
+    } else { f(); }
+})(document, window, "yandex_metrika_callbacks");
+</script>
+<noscript><div><img src="//mc.yandex.ru/watch/18506329" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+<!-- /Yandex.Metrika counter -->
+  </body>
+</html>

@@ -1,6 +1,7 @@
 ﻿using Ahatornn.TestGenerator;
 using DumaLens.Entities;
 using DumaLens.Entities.Contracts;
+using DumaLens.Entities.Contracts.Enums;
 using DumaLens.Entities.Default;
 using DumaLens.Entities.Enums;
 using System.Security.Cryptography;

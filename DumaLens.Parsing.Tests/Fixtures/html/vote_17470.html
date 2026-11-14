@@ -1,0 +1,226 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ru" lang="ru">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="title" content="предл деп Билалова: перейти к п 31 – Система анализа результатов голосований на заседаниях Государственной Думы" />
+    <title>предл деп Билалова: перейти к п 31 – Система анализа результатов голосований на заседаниях Государственной Думы</title>
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="stylesheet" type="text/css" media="screen" href="/css/style.css?13" />
+	<!--[if IE 7]><link rel="stylesheet" type="text/css" media="screen,project" href="/css/ie7.css" /><![endif]-->
+	<!--[if IE 6]><link rel="stylesheet" type="text/css" media="screen,project" href="/css/ie6.css?2" />
+		<script type="text/javascript" src="/js/DD_belatedPNG_0.0.8a-min.js"></script>
+		<script type="text/javascript">
+			DD_belatedPNG.fix('#sf-show,.sort-menu li a.s-down,.sort-menu li a.s-up,.dpl-leg-2,.dpl-leg-1,.dpl-leg-3,.dpl-leg-4');
+		</script>
+	<![endif]-->
+    <!--[if lte IE 6]><script src="/js/ie6/warning.js"></script><script>window.onload=function(){e("/js/ie6/")}</script><![endif]-->
+    <script type="text/javascript" src="/js/jquery-1.6.1.min.js"></script>
+<script type="text/javascript" src="/js/jquery.selectbox-1.2.js"></script>
+<script type="text/javascript" src="/js/jquery.maskedinput-1.3.min.js"></script>
+<script type="text/javascript" src="/js/jquery-ui-1.8.14.custom.min.js"></script>
+<script type="text/javascript" src="/js/jquery-ui-datapicker-1.8.4.min.js"></script>
+<script type="text/javascript" src="/js/highcharts.js"></script>
+<script type="text/javascript" src="/js/script.js?12"></script>
+<script type="text/javascript" src="/js/swfobject.js"></script>
+<script type="text/javascript" src="/js/amcharts/amcharts.js"></script>
+<script type="text/javascript" src="/js/amcharts/pie.js"></script>
+  </head>
+  <body>
+    <div id="wrap">
+      <div id="logo"><a href="http://www.duma.gov.ru/">Государственная Дума России - Система анализа результатов голосований на заседаниях Государственной Думы</a></div>
+      <div id="header">Система анализа результатов голосований на заседаниях Государственной Думы</div>
+        <div id="main">
+    <div class="box-p">
+        <div class="head-p">Справка о результатах голосования по вопросу:</div>
+        <h1>предл деп Билалова: перейти к п 31</h1>
+        <div class="date-p">
+            <span>15.11.2002 17:01:50</span>
+                        <i>|</i>
+                                          <a href="http://api.duma.gov.ru/api/transcriptFull/2002-11-15#2002_11_15_17_01_50">Голосование в стенограммах</a>
+                                  <i>|</i>
+            <a href="#" id="print-link">Версия для печати</a>
+        </div>
+    </div>
+          <div class="statis-p">
+                <div class="sp-head">Результат голосования:
+                                              <b class="red">отклонен (не набран кворум)</b>
+                                    </div>
+          </div>
+    <div class="statis show">
+        <div class="statis-l">
+            <div class="s-head">
+                Общее распределение голосов:
+            </div>
+            <div class="diagram">
+                <div class="img-diagram" id="diagram">
+                    <div id="diagram-js" class="diagram-js"></div>
+                </div>
+                <div class="leg-diagram">
+                    <div class="green"><b>За:</b> 78 голосов, 17.3%</div>
+                    <div class="red"><b>Против:</b> 45                        голосов, 10%
+                    </div>
+                    <div class="blue"><b>Воздержалось:</b> 0                        голосов, 0%
+                    </div>
+                    <div class="gray"><b>Не голосовало:</b> 327                        голосов, 72.7%
+                    </div>
+                    <div class="ld-itog">Кворум: 226 депутатов</div>
+                </div>
+            </div>
+        </div>
+        <div class="statis-r">
+            <div class="s-head">
+                Распределение голосов по фракциям:
+            </div>
+            <div class="ld-box-fraсt">
+                <table>
+                    <tr>
+                                          </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+  
+    <div class="statis-p">
+        <div class="sp-head">Поименные результаты голосования</div>
+    </div>
+    <!--table -->
+    <ul class="tabs">
+        <li class="left"><a rel="all">Все</a></li>
+          </ul>
+    <div class="table-page-faction">
+        <div class="table-data"></div>
+        <!-- футер для таблицы -->
+        <div class="table-data-foot">
+            <div class="table-data-foot-l">
+                <div class="table-data-foot-r">
+                    <div class="table-data-foot-count"><b>Выбрано:</b> 0</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- енд-а table -->
+</div>
+<script>
+    var chart, deputiesData, deputiesColumns, activeLetter, deputiesSortField, deputiesSortDirection;
+
+  deputiesColumns = [
+      {
+          title: 'Фамилия Имя Отчество',
+          sortField: 'sortName',
+          width: 320,
+          renderer: function (rec) {
+              return '<a href="' + rec.url + '">' + rec.name + '</a>';
+          }
+      },
+      {
+          title: 'Фракция',
+          sortField: 'faction',
+          dataField: 'faction',
+          width: 122
+      },
+      {
+          title: 'Результаты голосования',
+          sortField: 'result',
+          renderer: function (rec) {
+      if (rec.result == 'for')
+                  return '<b class="green">За</b>';
+      if (rec.result == 'abstain')
+                  return '<b class="gray">Воздержался</b>';
+      if (rec.result == 'against')
+                  return '<b class="red">Против</b>';
+      if (rec.result == 'absent')
+                  return '<b>Не голосовал</b>';
+
+      return '<b>' + rec.result +'</b>';
+          }
+      }
+  ];
+
+  deputiesData = [];
+  activeLetter = null;
+  deputiesSortField = 'sortName';
+  deputiesSortDirection = 'asc';
+  basicUrl = "http:\/\/vote.duma.gov.ru\/vote\/17470";
+  activeFaction = null;
+
+  $(document).ready(function () {
+      var chart;
+
+    var chartData = [{"title":"\u0417\u0430","number":78},{"title":"\u041f\u0440\u043e\u0442\u0438\u0432","number":45},{"title":"\u0412\u043e\u0437\u0434\u0435\u0440\u0436\u0430\u043b\u043e\u0441\u044c","number":0},{"title":"\u041d\u0435 \u0433\u043e\u043b\u043e\u0441\u043e\u0432\u0430\u043b\u043e","number":327}];
+
+      AmCharts.ready(function () {
+          // PIE CHART
+          chart = new AmCharts.AmPieChart();
+          chart.dataProvider = chartData;
+          chart.titleField = "title";
+          chart.valueField = "number";
+          chart.outlineColor = "#FFFFFF";
+          chart.radarCategoriesEnabled = false;
+          chart.outlineAlpha = 0.8;
+          chart.colors = ["#32A218","#D91D1D","#2C8DAC","#575757"];
+          chart.outlineThickness = 2;
+          chart.minRadius = 90;
+          chart.labelsEnabled = false;
+          chart.sequencedAnimation = false;
+          chart.startDuration = 0;
+
+          // WRITE
+          chart.write("diagram-js");
+      });
+
+      $('#print-link').click(function () {
+          var url = basicUrl;
+          if (url.indexOf('?') >= 0)
+              url += '&';
+          else
+              url += '?';
+          url += 'print';
+
+          if (activeLetter !== null)
+              url += '&letter=' + encodeURI(activeLetter);
+          if (activeFaction !== null)
+              url += '&faction=' + encodeURI(activeFaction);
+          if (deputiesSortField == 'sortName')
+              url += '&sort=name_' + deputiesSortDirection;
+          else
+              url += '&sort=' + deputiesSortField + '_' + deputiesSortDirection;
+
+          $(this).attr('href', url);
+          return true;
+      });
+  });
+</script>
+      <div id="foot">
+		<div>© Государственная Дума Федерального Собрания Российской Федерации, 2026</div>
+		<span><a href="http://www.duma.gov.ru/">www.duma.gov.ru</a> (1)</span>
+      </div>
+    </div>
+    <!-- Yandex.Metrika counter -->
+<script type="text/javascript">
+(function (d, w, c) {
+    (w[c] = w[c] || []).push(function() {
+        try {
+            w.yaCounter18506329 = new Ya.Metrika({id:18506329,
+                    clickmap:true,
+                    trackLinks:true,
+                    accurateTrackBounce:true});
+        } catch(e) { }
+    });
+
+    var n = d.getElementsByTagName("script")[0],
+        s = d.createElement("script"),
+        f = function () { n.parentNode.insertBefore(s, n); };
+    s.type = "text/javascript";
+    s.async = true;
+    s.src = (d.location.protocol == "https:" ? "https:" : "http:") + "//mc.yandex.ru/metrika/watch.js";
+
+    if (w.opera == "[object Opera]") {
+        d.addEventListener("DOMContentLoaded", f, false);
+    } else { f(); }
+})(document, window, "yandex_metrika_callbacks");
+</script>
+<noscript><div><img src="//mc.yandex.ru/watch/18506329" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+<!-- /Yandex.Metrika counter -->
+  </body>
+</html>

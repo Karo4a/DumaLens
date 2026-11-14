@@ -1,4 +1,4 @@
-﻿namespace DumaLens.Entities.Enums;
+﻿namespace DumaLens.Entities.Contracts.Enums;
 
 /// <summary>
 /// Результат индивидуального голоса депутата

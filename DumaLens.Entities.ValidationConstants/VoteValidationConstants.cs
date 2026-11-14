@@ -24,4 +24,14 @@ public static class VoteValidationConstants
     /// Максимальная длина строкового значения источника данных
     /// </summary>
     public const int SourceMaxLength = 16;
+
+    /// <summary>
+    /// Минимальное допустимое число депутатов в голосовании с результатами
+    /// </summary>
+    public const int DeputyCountMin = 430;
+
+    /// <summary>
+    /// Максимальное допустимое число депутатов в голосовании с результатами
+    /// </summary>
+    public const int DeputyCountMax = 460;
 }

@@ -2,4 +2,7 @@
   <ItemGroup>
     <ProjectReference Include="..\DumaLens.Parsing\DumaLens.Parsing.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <None Update="Fixtures\**\*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

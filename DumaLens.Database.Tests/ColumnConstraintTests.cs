@@ -1,8 +1,8 @@
 ﻿using Ahatornn.TestGenerator;
 using DumaLens.Database.Tests.Infrastructure;
 using DumaLens.Entities;
+using DumaLens.Entities.Contracts.Enums;
 using DumaLens.Entities.Default;
-using DumaLens.Entities.Enums;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
