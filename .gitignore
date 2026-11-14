@@ -28,3 +28,4 @@ appsettings.Local.json
 
 # Logs
 *.log
+verify-report.txt

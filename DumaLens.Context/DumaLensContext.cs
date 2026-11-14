@@ -65,7 +65,13 @@ public class DumaLensContext : DbContext, IReader, IWriter, IUnitOfWork
         => base.Entry(entity).State = EntityState.Added;
 
     void IWriter.Edit<TEntity>([NotNull] TEntity entity)
-        => base.Entry(entity).State = EntityState.Modified;
+    {
+        var entry = base.Entry(entity);
+        if (entry.State != EntityState.Added)
+        {
+            entry.State = EntityState.Modified;
+        }
+    }
 
     void IWriter.Delete<TEntity>([NotNull] TEntity entity)
         => base.Entry(entity).State = EntityState.Deleted;

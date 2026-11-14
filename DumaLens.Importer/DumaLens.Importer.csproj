@@ -3,8 +3,12 @@
     <OutputType>Exe</OutputType>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="System.CommandLine" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\DumaLens.Common\DumaLens.Common.csproj" />
     <ProjectReference Include="..\DumaLens.Context\DumaLens.Context.csproj" />
     <ProjectReference Include="..\DumaLens.Parsing\DumaLens.Parsing.csproj" />
-    <ProjectReference Include="..\DumaLens.Services\DumaLens.Services.csproj" />
+    <ProjectReference Include="..\DumaLens.Repositories\DumaLens.Repositories.csproj" />
   </ItemGroup>
 </Project>
