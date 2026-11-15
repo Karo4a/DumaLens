@@ -15,6 +15,13 @@ public class EnumNameSchemaFilter : ISchemaFilter
         {
             return;
         }
+        // Ссылка на enum-схему или её allOf-обёртка (UseAllOfToExtendReferenceSchemas):
+        // тип и значения уже заданы в компонентной схеме; дублирование здесь порождает
+        // отдельные enum-типы на каждое DTO в NSwag-клиенте вместо общих VoteStage и т.п.
+        if (schema.Reference != null || schema.AllOf?.Count > 0)
+        {
+            return;
+        }
         schema.Type = "string";
         schema.Enum = Enum.GetNames(context.Type)
             .Select(name => new OpenApiString(name) as IOpenApiAny)

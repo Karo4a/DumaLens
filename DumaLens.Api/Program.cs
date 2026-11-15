@@ -69,6 +69,9 @@ public class Program
             c.IncludeXmlComments(Path.Combine(baseDirectory, "DumaLens.Api.Models.xml"));
             c.SchemaFilter<EnumNameSchemaFilter>();
             c.EnableAnnotations();
+            // allOf-обёртка для $ref-свойств: OpenAPI 3.0 игнорирует description рядом с голым $ref,
+            // из-за чего XML-описания enum-свойств (stage/outcome/source/result) терялись в спеке
+            c.UseAllOfToExtendReferenceSchemas();
             c.CustomOperationIds(apiDescription =>
                 $"{apiDescription.ActionDescriptor.RouteValues["controller"]}_{apiDescription.ActionDescriptor.RouteValues["action"]}");
         });

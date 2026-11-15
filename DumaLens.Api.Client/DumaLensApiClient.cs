@@ -2382,10 +2382,16 @@ namespace DumaLens.Api.Client
         [System.Text.Json.Serialization.JsonPropertyName("votedAt")]
         public System.DateTimeOffset VotedAt { get; set; }
 
+        /// <summary>
+        /// Стадия рассмотрения
+        /// </summary>
         [System.Text.Json.Serialization.JsonPropertyName("stage")]
         [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<VoteStage>))]
         public VoteStage Stage { get; set; }
 
+        /// <summary>
+        /// Итог голосования
+        /// </summary>
         [System.Text.Json.Serialization.JsonPropertyName("outcome")]
         [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<VoteOutcome>))]
         public VoteOutcome Outcome { get; set; }
@@ -2613,6 +2619,9 @@ namespace DumaLens.Api.Client
         [System.Text.Json.Serialization.JsonPropertyName("fullName")]
         public string FullName { get; set; }
 
+        /// <summary>
+        /// Результат голосования депутата
+        /// </summary>
         [System.Text.Json.Serialization.JsonPropertyName("result")]
         [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<VoteResult>))]
         public VoteResult Result { get; set; }
@@ -2900,10 +2909,16 @@ namespace DumaLens.Api.Client
         [System.Text.Json.Serialization.JsonPropertyName("billNumber")]
         public string BillNumber { get; set; }
 
+        /// <summary>
+        /// Стадия рассмотрения
+        /// </summary>
         [System.Text.Json.Serialization.JsonPropertyName("stage")]
         [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<VoteStage>))]
         public VoteStage Stage { get; set; }
 
+        /// <summary>
+        /// Итог голосования
+        /// </summary>
         [System.Text.Json.Serialization.JsonPropertyName("outcome")]
         [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<VoteOutcome>))]
         public VoteOutcome Outcome { get; set; }
@@ -2983,10 +2998,16 @@ namespace DumaLens.Api.Client
         [System.Text.Json.Serialization.JsonPropertyName("billNumber")]
         public string BillNumber { get; set; }
 
+        /// <summary>
+        /// Стадия рассмотрения
+        /// </summary>
         [System.Text.Json.Serialization.JsonPropertyName("stage")]
         [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<VoteStage>))]
         public VoteStage Stage { get; set; }
 
+        /// <summary>
+        /// Итог голосования
+        /// </summary>
         [System.Text.Json.Serialization.JsonPropertyName("outcome")]
         [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<VoteOutcome>))]
         public VoteOutcome Outcome { get; set; }
@@ -3039,6 +3060,9 @@ namespace DumaLens.Api.Client
         [System.Text.Json.Serialization.JsonPropertyName("acceptPercentSite")]
         public double? AcceptPercentSite { get; set; }
 
+        /// <summary>
+        /// Источник данных голосования
+        /// </summary>
         [System.Text.Json.Serialization.JsonPropertyName("source")]
         [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<VoteSource>))]
         public VoteSource Source { get; set; }
