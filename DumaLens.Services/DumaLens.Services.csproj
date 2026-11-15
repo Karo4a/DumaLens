@@ -6,6 +6,7 @@
     <ProjectReference Include="..\DumaLens.Entities\DumaLens.Entities.csproj" />
     <ProjectReference Include="..\DumaLens.Entities.Contracts\DumaLens.Entities.Contracts.csproj" />
     <ProjectReference Include="..\DumaLens.Entities.ValidationConstants\DumaLens.Entities.ValidationConstants.csproj" />
+    <ProjectReference Include="..\DumaLens.Repositories.Contracts\DumaLens.Repositories.Contracts.csproj" />
     <ProjectReference Include="..\DumaLens.Services.Contracts\DumaLens.Services.Contracts.csproj" />
   </ItemGroup>
 </Project>

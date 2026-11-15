@@ -1,5 +1,7 @@
 ﻿using DumaLens.Services.Contracts;
 using DumaLens.Services.Contracts.Exceptions;
+using DumaLens.Services.Contracts.Models;
+using DumaLens.Services.Search;
 using FluentValidation;
 
 namespace DumaLens.Services;
@@ -14,8 +16,10 @@ public class ValidateService : IValidateService, IServiceAnchor
     /// </summary>
     public ValidateService()
     {
-        // Валидаторы моделей появятся на Э5+
-        validators = new Dictionary<Type, IValidator>();
+        validators = new Dictionary<Type, IValidator>
+        {
+            [typeof(VoteSearchQueryModel)] = new VoteSearchQueryModelValidator(),
+        };
     }
 
     async Task IValidateService.Validate<TModel>(TModel model, CancellationToken cancellation)

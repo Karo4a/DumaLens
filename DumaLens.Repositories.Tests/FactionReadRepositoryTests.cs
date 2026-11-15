@@ -144,4 +144,36 @@ public class FactionReadRepositoryTests : DumaLensContextInMemory
         // Assert
         result.Should().BeNull();
     }
+
+    /// <summary>
+    /// GetAllPeriods должен возвращать все неудалённые периоды всех фракций (Э5: резолвинг исторических названий)
+    /// </summary>
+    [Fact]
+    public async Task GetAllPeriodsShouldReturnActivePeriodsOfAllFactions()
+    {
+        // Arrange
+        var first = await PrepareFactionPeriod();
+        var second = await PrepareFactionPeriod();
+        await PrepareFactionPeriod(deletedAt: DateTimeOffset.UtcNow);
+
+        // Act
+        var result = await repository.GetAllPeriods(CancellationToken.None);
+
+        // Assert
+        result.Should().HaveCount(2);
+        result.Select(x => x.Id).Should().BeEquivalentTo(new[] { first.Id, second.Id });
+    }
+
+    /// <summary>
+    /// GetAllPeriods должен возвращать пустой список при отсутствии периодов
+    /// </summary>
+    [Fact]
+    public async Task GetAllPeriodsShouldReturnEmptyWhenNoPeriods()
+    {
+        // Act
+        var result = await repository.GetAllPeriods(CancellationToken.None);
+
+        // Assert
+        result.Should().BeEmpty();
+    }
 }

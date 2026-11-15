@@ -87,4 +87,20 @@ public class FactionReadRepository : IFactionReadRepository, IRepositoryAnchor
                 DateTo = x.DateTo,
             })
             .FirstOrDefaultAsync(cancellationToken);
+
+    Task<IReadOnlyCollection<FactionPeriodDbModel>> IFactionReadRepository.GetAllPeriods(CancellationToken cancellationToken)
+        => reader.Read<FactionPeriod>()
+            .NotDeletedAt()
+            .Select(x => new FactionPeriodDbModel
+            {
+                Id = x.Id,
+                FactionId = x.FactionId,
+                ConvocationId = x.ConvocationId,
+                SiteId = x.SiteId,
+                Title = x.Title,
+                DateFrom = x.DateFrom,
+                DateTo = x.DateTo,
+            })
+            .OrderBy(x => x.DateFrom)
+            .ToReadOnlyCollectionAsync(cancellationToken);
 }

@@ -32,4 +32,11 @@ public interface IFactionReadRepository
     /// Получает период фракции по идентификатору сайта в рамках созыва
     /// </summary>
     Task<FactionPeriodDbModel?> GetPeriodBySiteId(Guid convocationId, long siteId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Возвращает все фракционные периоды (резолвинг исторических названий фракций в поиске)
+    /// </summary>
+    /// <param name="cancellationToken">Токен отмены</param>
+    /// <returns>Периоды фракций, упорядоченные по дате начала</returns>
+    Task<IReadOnlyCollection<FactionPeriodDbModel>> GetAllPeriods(CancellationToken cancellationToken);
 }
