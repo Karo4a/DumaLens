@@ -42,6 +42,7 @@ public static class ImporterHost
         services.AddScoped<ITitleNormalizer, TitleNormalizer>();
         services.AddScoped<IVoteParseValidator, VoteParseValidator>();
         services.AddScoped<ReferenceCatalog>();
+        services.AddScoped<BulkLoadSchema>();
         services.AddScoped<ArchiveImporter>();
         services.AddScoped<ArchiveVerifier>();
         services.AddScoped<StatsRecalculator>();

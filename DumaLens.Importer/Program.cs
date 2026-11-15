@@ -25,12 +25,18 @@ internal class Program
         var batchOption = new Option<int>("--batch", () => 500, "Размер пачки голосований в одной транзакции");
         var resumeOption = new Option<bool>("--resume", "Пропускать голосования, уже загруженные в базу (продолжение после сбоя)");
         var logOption = new Option<FileInfo?>("--log", "Файл журнала импорта (дополнительно к stdout)");
+        var maxFilesOption = new Option<int>("--max-files", () => 0, "Ограничить число обрабатываемых файлов архива (0 — все); для пробных прогонов");
+        var bulkOption = new Option<bool>("--bulk", "Bulk-режим для пустых таблиц: вторичные индексы и FK удаляются на время импорта и восстанавливаются после (существенно быстрее)");
+        var workersOption = new Option<int>("--workers", () => 0, "Число параллельных задач разбора JSON (0 — автоматически по числу процессоров)");
 
         var importCommand = new Command("import-archive", "Потоковый импорт архива vote-master.zip в PostgreSQL");
         importCommand.AddOption(zipOption);
         importCommand.AddOption(batchOption);
         importCommand.AddOption(resumeOption);
         importCommand.AddOption(logOption);
+        importCommand.AddOption(maxFilesOption);
+        importCommand.AddOption(bulkOption);
+        importCommand.AddOption(workersOption);
         importCommand.SetHandler(async invocationContext =>
         {
             var cancellationToken = invocationContext.GetCancellationToken();
@@ -38,11 +44,28 @@ internal class Program
             var batch = invocationContext.ParseResult.GetValueForOption(batchOption);
             var resume = invocationContext.ParseResult.GetValueForOption(resumeOption);
             var logFile = invocationContext.ParseResult.GetValueForOption(logOption);
+            var maxFiles = invocationContext.ParseResult.GetValueForOption(maxFilesOption);
+            var bulk = invocationContext.ParseResult.GetValueForOption(bulkOption);
+            var workers = invocationContext.ParseResult.GetValueForOption(workersOption);
             var connection = invocationContext.ParseResult.GetValueForOption(connectionOption);
 
             if (batch < 1)
             {
                 Console.Error.WriteLine("--batch должен быть не меньше 1");
+                invocationContext.ExitCode = 1;
+                return;
+            }
+
+            if (maxFiles < 0)
+            {
+                Console.Error.WriteLine("--max-files должен быть неотрицательным");
+                invocationContext.ExitCode = 1;
+                return;
+            }
+
+            if (workers < 0)
+            {
+                Console.Error.WriteLine("--workers должен быть неотрицательным");
                 invocationContext.ExitCode = 1;
                 return;
             }
@@ -64,6 +87,9 @@ internal class Program
                     ZipPath = zip.FullName,
                     BatchSize = batch,
                     Resume = resume,
+                    MaxFiles = maxFiles,
+                    Bulk = bulk,
+                    Workers = workers,
                 };
                 await importer.Import(options, cancellationToken);
                 invocationContext.ExitCode = 0;
@@ -143,6 +169,34 @@ internal class Program
             }
         });
         root.AddCommand(recalcCommand);
+
+        var restoreSchemaCommand = new Command("restore-schema", "Довосстановление схемы потоковых таблиц (индексы, FK, триггеры) после аварийного завершения bulk-импорта — без повторного импорта данных");
+        restoreSchemaCommand.SetHandler(async invocationContext =>
+        {
+            var cancellationToken = invocationContext.GetCancellationToken();
+            var connection = invocationContext.ParseResult.GetValueForOption(connectionOption);
+
+            try
+            {
+                var connectionString = ImporterHost.ResolveConnectionString(connection);
+                await using var provider = ImporterHost.BuildServiceProvider(connectionString, logFilePath: null);
+                var schema = provider.GetRequiredService<BulkLoadSchema>();
+                await schema.PrepareAsync(bulk: false, cancellationToken);
+                await schema.RestoreAsync(cancellationToken);
+                Console.WriteLine("Схема потоковых таблиц восстановлена: отсутствующие индексы и FK созданы, триггеры включены.");
+                invocationContext.ExitCode = 0;
+            }
+            catch (OperationCanceledException)
+            {
+                invocationContext.ExitCode = 1;
+            }
+            catch (Exception exception)
+            {
+                Console.Error.WriteLine($"Восстановление схемы завершилось ошибкой: {exception}");
+                invocationContext.ExitCode = 1;
+            }
+        });
+        root.AddCommand(restoreSchemaCommand);
 
         return await root.InvokeAsync(args);
     }

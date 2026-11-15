@@ -6,6 +6,7 @@ using DumaLens.Importer.Verify;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Npgsql;
 using System.IO.Compression;
 using System.Text;
 using System.Text.Json.Nodes;
@@ -458,6 +459,103 @@ public sealed class ArchiveImporterTests
         }
     }
 
+    /// <summary>
+    /// Bulk-режим: после импорта схема идентична схеме миграций (индексы и FK восстановлены из EF-модели)
+    /// </summary>
+    [SkippableFact]
+    public async Task Import_BulkMode_RestoresSchemaIdenticalToMigrations()
+    {
+        var database = new DatabaseFixture();
+        await database.InitializeAsync();
+        Skip.If(database.SkipReason != null, database.SkipReason);
+        var zipPath = CreateMiniZip();
+        try
+        {
+            var before = await SnapshotStreamSchema(database);
+            var summary = await RunImport(database.ConnectionString, zipPath, resume: false, bulk: true);
+            summary.DeputyVotesImported.Should().Be(1340);
+            summary.FactionStatsImported.Should().Be(20);
+            var after = await SnapshotStreamSchema(database);
+            after.Should().BeEquivalentTo(before, "bulk-режим обязан восстановить индексы и FK в точности как в миграциях");
+        }
+        finally
+        {
+            File.Delete(zipPath);
+            await database.DisposeAsync();
+        }
+    }
+
+    /// <summary>
+    /// Bulk-режим под ограниченной ролью (не суперпользователь, не владелец таблиц): мягкий переход в обычный режим
+    /// </summary>
+    [SkippableFact]
+    public async Task Import_BulkMode_RestrictedRole_FallsBackToNormalMode()
+    {
+        var database = new DatabaseFixture();
+        await database.InitializeAsync();
+        Skip.If(database.SkipReason != null, database.SkipReason);
+        var zipPath = CreateMiniZip();
+        var roleName = "dl_bulk_test_" + Guid.NewGuid().ToString("N")[..12];
+        var password = Guid.NewGuid().ToString("N");
+        var roleCreated = false;
+        try
+        {
+            var databaseName = new NpgsqlConnectionStringBuilder(database.ConnectionString).Database;
+            await using (var adminContext = database.CreateContext())
+            {
+                await adminContext.Database.ExecuteSqlRawAsync(
+                    "CREATE ROLE \"" + roleName + "\" LOGIN PASSWORD '" + password + "' NOSUPERUSER NOCREATEDB NOCREATEROLE");
+                roleCreated = true;
+                await adminContext.Database.ExecuteSqlRawAsync("GRANT CONNECT ON DATABASE \"" + databaseName + "\" TO \"" + roleName + "\"");
+                await adminContext.Database.ExecuteSqlRawAsync("GRANT USAGE ON SCHEMA public TO \"" + roleName + "\"");
+                await adminContext.Database.ExecuteSqlRawAsync("GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO \"" + roleName + "\"");
+            }
+
+            var restrictedConnection = new NpgsqlConnectionStringBuilder(database.ConnectionString)
+            {
+                Username = roleName,
+                Password = password,
+            }.ConnectionString;
+            var summary = await RunImport(restrictedConnection, zipPath, resume: false, bulk: true);
+            summary.DeputyVotesImported.Should().Be(1340, "без прав на DDL импорт обязан завершиться в обычном режиме");
+
+            await using var checkContext = database.CreateContext();
+            var disabledTriggers = await checkContext.Database
+                .SqlQueryRaw<int>("SELECT count(*)::int AS \"Value\" FROM pg_trigger " +
+                    "WHERE tgrelid IN ('\"DeputyVotes\"'::regclass, '\"VoteFactionStats\"'::regclass) AND tgenabled = 'D'")
+                .SingleAsync();
+            disabledTriggers.Should().Be(0, "не-суперпользователь не отключает триггеры");
+        }
+        finally
+        {
+            File.Delete(zipPath);
+            if (roleCreated)
+            {
+                await using var cleanupContext = database.CreateContext();
+                await cleanupContext.Database.ExecuteSqlRawAsync("DROP OWNED BY \"" + roleName + "\"");
+                await cleanupContext.Database.ExecuteSqlRawAsync("DROP ROLE \"" + roleName + "\"");
+            }
+
+            await database.DisposeAsync();
+        }
+    }
+
+    /// <summary>
+    /// Снимок схемы потоковых таблиц: определения индексов и FK для сравнения до/после bulk-импорта
+    /// </summary>
+    private static async Task<List<string>> SnapshotStreamSchema(DatabaseFixture database)
+    {
+        await using var context = database.CreateContext();
+        var indexes = await context.Database
+            .SqlQueryRaw<string>("SELECT indexdef AS \"Value\" FROM pg_indexes WHERE tablename IN ('DeputyVotes', 'VoteFactionStats')")
+            .ToListAsync();
+        var foreignKeys = await context.Database
+            .SqlQueryRaw<string>("SELECT conname || '|' || pg_get_constraintdef(oid) AS \"Value\" FROM pg_constraint " +
+                "WHERE conrelid IN ('\"DeputyVotes\"'::regclass, '\"VoteFactionStats\"'::regclass) AND contype = 'f'")
+            .ToListAsync();
+        return indexes.Concat(foreignKeys).OrderBy(x => x, StringComparer.Ordinal).ToList();
+    }
+
     private static string LoadFixture(string name)
     {
         return File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", "json", $"{name}.json"));
@@ -492,12 +590,12 @@ public sealed class ArchiveImporterTests
         return path;
     }
 
-    private static async Task<ImportSummary> RunImport(string connectionString, string zipPath, bool resume)
+    private static async Task<ImportSummary> RunImport(string connectionString, string zipPath, bool resume, bool bulk = false)
     {
         await using var provider = ImporterHost.BuildServiceProvider(connectionString, null);
         await using var scope = provider.CreateAsyncScope();
         var importer = scope.ServiceProvider.GetRequiredService<ArchiveImporter>();
-        var options = new ImportOptions { ZipPath = zipPath, BatchSize = 2, Resume = resume };
+        var options = new ImportOptions { ZipPath = zipPath, BatchSize = 2, Resume = resume, Bulk = bulk };
         return await importer.Import(options, CancellationToken.None);
     }
 

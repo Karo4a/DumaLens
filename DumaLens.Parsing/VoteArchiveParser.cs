@@ -95,16 +95,38 @@ public sealed class VoteArchiveParser : IVoteArchiveParser
     /// <summary>
     /// Маппинг кодов архива: accept/decline/abstain/none → канонический результат
     /// </summary>
+    /// <remarks>
+    /// Сравнение без приведения регистра и аллокаций: коды архива строчные, проверка OrdinalIgnoreCase
+    /// сохраняет совместимость с произвольным регистром.
+    /// </remarks>
     private static VoteResult? MapResult(string? code)
     {
-        return code?.ToLowerInvariant() switch
+        if (code is null)
         {
-            "accept" => VoteResult.Accept,
-            "decline" => VoteResult.Decline,
-            "abstain" => VoteResult.Abstain,
-            "none" => VoteResult.None,
-            _ => null
-        };
+            return null;
+        }
+
+        if (code.Equals("accept", StringComparison.OrdinalIgnoreCase))
+        {
+            return VoteResult.Accept;
+        }
+
+        if (code.Equals("decline", StringComparison.OrdinalIgnoreCase))
+        {
+            return VoteResult.Decline;
+        }
+
+        if (code.Equals("abstain", StringComparison.OrdinalIgnoreCase))
+        {
+            return VoteResult.Abstain;
+        }
+
+        if (code.Equals("none", StringComparison.OrdinalIgnoreCase))
+        {
+            return VoteResult.None;
+        }
+
+        return null;
     }
 
     /// <summary>
