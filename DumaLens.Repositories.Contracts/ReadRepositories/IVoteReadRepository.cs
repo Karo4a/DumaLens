@@ -20,4 +20,9 @@ public interface IVoteReadRepository
     /// (пустой состав, никто не голосовал) условию не удовлетворяют.
     /// </remarks>
     Task<VoteSearchPageDbModel> Search(VoteSearchSpec spec, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Получает полную карточку голосования по идентификатору сайта (null — не найдено)
+    /// </summary>
+    Task<VoteDetailsDbModel?> GetDetailsBySiteId(long siteId, CancellationToken cancellationToken);
 }

@@ -10,7 +10,10 @@ namespace DumaLens.Entities;
 /// </remarks>
 public class Bill : DbBaseEntity
 {
-    private const string SozdUrlPrefix = "https://sozd.duma.gov.ru/bill/";
+    /// <summary>
+    /// Префикс ссылки на карточку законопроекта в СОЗД
+    /// </summary>
+    public const string SozdUrlPrefix = "https://sozd.duma.gov.ru/bill/";
 
     /// <summary>
     /// Номер законопроекта (например, 500091-8)

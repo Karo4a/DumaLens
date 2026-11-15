@@ -26,8 +26,8 @@ if not exist DumaLens.Web\bin\Release\net8.0\DumaLens.Web.dll (
 
 rem Development включает Swagger UI у Api
 set ASPNETCORE_ENVIRONMENT=Development
-start "DumaLens.Api" cmd /c "cd /d DumaLens.Api\bin\Release\net8.0 && dotnet DumaLens.Api.dll --urls http://localhost:5000"
+start "DumaLens.Api" cmd /c "cd /d DumaLens.Api\bin\Release\net8.0 && dotnet DumaLens.Api.dll --urls http://localhost:5200"
 start "DumaLens.Web" cmd /c "cd /d DumaLens.Web\bin\Release\net8.0 && dotnet DumaLens.Web.dll --urls http://localhost:5100"
 
-echo Api:  http://localhost:5000/swagger
+echo Api:  http://localhost:5200/swagger
 echo Web:  http://localhost:5100 ^(заглушка до реализации Э8^)

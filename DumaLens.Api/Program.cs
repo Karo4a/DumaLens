@@ -10,6 +10,7 @@ using DumaLens.Services;
 using DumaLens.Services.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
+using System.Text.Json.Serialization;
 
 namespace DumaLens.Api;
 
@@ -27,6 +28,11 @@ public class Program
         var controllers = builder.Services.AddControllers(opt =>
         {
             opt.Filters.Add<DumaLensExceptionFilter>();
+        })
+        .AddJsonOptions(opt =>
+        {
+            // Enum контракта §04.5 — строковые имена (ThirdReading, Accepted, ...)
+            opt.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
         });
         if (builder.Environment.EnvironmentName == EnvironmentProvider.IntegrationEnvironment)
         {
@@ -60,8 +66,11 @@ public class Program
             });
             var baseDirectory = AppContext.BaseDirectory;
             c.IncludeXmlComments(Path.Combine(baseDirectory, "DumaLens.Api.xml"));
+            c.IncludeXmlComments(Path.Combine(baseDirectory, "DumaLens.Api.Models.xml"));
             c.SchemaFilter<EnumNameSchemaFilter>();
             c.EnableAnnotations();
+            c.CustomOperationIds(apiDescription =>
+                $"{apiDescription.ActionDescriptor.RouteValues["controller"]}_{apiDescription.ActionDescriptor.RouteValues["action"]}");
         });
         builder.Services.AddHealthChecks();
         var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");

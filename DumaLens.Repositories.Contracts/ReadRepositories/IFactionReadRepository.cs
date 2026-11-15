@@ -39,4 +39,9 @@ public interface IFactionReadRepository
     /// <param name="cancellationToken">Токен отмены</param>
     /// <returns>Периоды фракций, упорядоченные по дате начала</returns>
     Task<IReadOnlyCollection<FactionPeriodDbModel>> GetAllPeriods(CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Получает сводную статистику фракции по созывам
+    /// </summary>
+    Task<IReadOnlyCollection<FactionConvocationStatsDbModel>> GetConvocationStats(Guid factionId, CancellationToken cancellationToken);
 }

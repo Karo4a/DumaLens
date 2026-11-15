@@ -22,4 +22,9 @@ public interface IConvocationReadRepository
     /// Получает коллекцию <see cref="Convocation"/>, упорядоченную по номеру
     /// </summary>
     Task<IReadOnlyCollection<ConvocationDbModel>> GetAll(CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Получает каталог созывов с числом голосований
+    /// </summary>
+    Task<IReadOnlyCollection<ConvocationCatalogDbModel>> GetCatalog(CancellationToken cancellationToken);
 }

@@ -3,6 +3,7 @@ using DumaLens.Entities;
 using DumaLens.Repositories.Contracts.Models;
 using DumaLens.Repositories.Contracts.ReadRepositories;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.ObjectModel;
 
 namespace DumaLens.Repositories.ReadRepositories;
 
@@ -63,4 +64,32 @@ public class ConvocationReadRepository : IConvocationReadRepository, IRepository
             })
             .OrderBy(x => x.Number)
             .ToReadOnlyCollectionAsync(cancellationToken);
+
+    async Task<IReadOnlyCollection<ConvocationCatalogDbModel>> IConvocationReadRepository.GetCatalog(CancellationToken cancellationToken)
+    {
+        var convocations = await reader.Read<Convocation>()
+            .NotDeletedAt()
+            .OrderBy(x => x.Number)
+            .Select(x => new ConvocationCatalogDbModel
+            {
+                Id = x.Id,
+                Number = x.Number,
+                SiteCode = x.SiteCode,
+                Title = x.Title,
+                DateFrom = x.DateFrom,
+                DateTo = x.DateTo,
+            })
+            .ToListAsync(cancellationToken);
+        var counts = await reader.Read<Vote>()
+            .NotDeletedAt()
+            .GroupBy(x => x.ConvocationId)
+            .Select(g => new { ConvocationId = g.Key, Count = g.Count() })
+            .ToListAsync(cancellationToken);
+        var countByConvocation = counts.ToDictionary(x => x.ConvocationId, x => x.Count);
+        foreach (var convocation in convocations)
+        {
+            convocation.VoteCount = countByConvocation.TryGetValue(convocation.Id, out var count) ? count : 0;
+        }
+        return new ReadOnlyCollection<ConvocationCatalogDbModel>(convocations);
+    }
 }

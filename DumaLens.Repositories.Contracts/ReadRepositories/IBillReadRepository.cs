@@ -14,4 +14,14 @@ public interface IBillReadRepository
     /// <param name="cancellationToken">Токен отмены</param>
     /// <returns>Модель законопроекта или null, если номер не найден</returns>
     Task<BillDbModel?> GetByNumber(string number, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Получает карточку законопроекта с хронологией голосований (null — не найден)
+    /// </summary>
+    Task<BillDetailsDbModel?> GetDetailsByNumber(string number, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Ищет законопроекты по части номера (автодополнение, не более limit записей)
+    /// </summary>
+    Task<IReadOnlyCollection<BillDbModel>> SearchByNumberPart(string numberPart, int limit, CancellationToken cancellationToken);
 }

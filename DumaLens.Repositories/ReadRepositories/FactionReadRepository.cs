@@ -64,6 +64,7 @@ public class FactionReadRepository : IFactionReadRepository, IRepositoryAnchor
                 Id = x.Id,
                 FactionId = x.FactionId,
                 ConvocationId = x.ConvocationId,
+                ConvocationNumber = x.Convocation.Number,
                 SiteId = x.SiteId,
                 Title = x.Title,
                 DateFrom = x.DateFrom,
@@ -81,6 +82,7 @@ public class FactionReadRepository : IFactionReadRepository, IRepositoryAnchor
                 Id = x.Id,
                 FactionId = x.FactionId,
                 ConvocationId = x.ConvocationId,
+                ConvocationNumber = x.Convocation.Number,
                 SiteId = x.SiteId,
                 Title = x.Title,
                 DateFrom = x.DateFrom,
@@ -96,11 +98,33 @@ public class FactionReadRepository : IFactionReadRepository, IRepositoryAnchor
                 Id = x.Id,
                 FactionId = x.FactionId,
                 ConvocationId = x.ConvocationId,
+                ConvocationNumber = x.Convocation.Number,
                 SiteId = x.SiteId,
                 Title = x.Title,
                 DateFrom = x.DateFrom,
                 DateTo = x.DateTo,
             })
             .OrderBy(x => x.DateFrom)
+            .ToReadOnlyCollectionAsync(cancellationToken);
+
+    Task<IReadOnlyCollection<FactionConvocationStatsDbModel>> IFactionReadRepository.GetConvocationStats(Guid factionId, CancellationToken cancellationToken)
+        => reader.Read<Vote>()
+            .NotDeletedAt()
+            .Join(reader.Read<VoteFactionStats>(),
+                vote => vote.Id,
+                stat => stat.VoteId,
+                (vote, stat) => new { Stat = stat })
+            .Where(x => x.Stat.FactionId == factionId)
+            .GroupBy(x => x.Stat.FactionPeriod.Convocation.Number)
+            .Select(g => new FactionConvocationStatsDbModel
+            {
+                ConvocationNumber = g.Key,
+                VoteCount = g.Count(),
+                AvgAcceptPctMembers = g.Average(x => x.Stat.AcceptPctMembers),
+                AvgDeclinePctMembers = g.Average(x => x.Stat.DeclinePctMembers),
+                AvgAbstainPctMembers = g.Average(x => x.Stat.AbstainPctMembers),
+                AvgNonePctMembers = g.Average(x => x.Stat.NonePctMembers),
+            })
+            .OrderBy(x => x.ConvocationNumber)
             .ToReadOnlyCollectionAsync(cancellationToken);
 }

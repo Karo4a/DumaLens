@@ -115,6 +115,54 @@ public class VoteReadRepository : IVoteReadRepository, IRepositoryAnchor
     /// NULL-процент (пустой состав, никто не голосовал) сравнению не удовлетворяет — ни в SQL, ни в LINQ to Objects.
     /// Явный перебор колонок вместо composition выражений: каждая ветка гарантированно транслируется в SQL.
     /// </remarks>
+    async Task<VoteDetailsDbModel?> IVoteReadRepository.GetDetailsBySiteId(long siteId, CancellationToken cancellationToken)
+    {
+        var vote = await reader.Read<Vote>()
+            .NotDeletedAt()
+            .Where(x => x.SiteId == siteId)
+            .Select(x => new VoteDetailsDbModel
+            {
+                Id = x.Id,
+                SiteId = x.SiteId,
+                Title = x.Title,
+                VotedAt = x.VotedAt,
+                UtcOffsetMinutes = x.UtcOffsetMinutes,
+                ConvocationNumber = x.Convocation.Number,
+                BillNumber = x.Bill != null ? x.Bill.Number : null,
+                Stage = x.Stage,
+                StageRaw = x.StageRaw,
+                Outcome = x.Outcome,
+                AcceptCount = x.AcceptCountTotal,
+                DeclineCount = x.DeclineCountTotal,
+                AbstainCount = x.AbstainCountTotal,
+                NoneCount = x.NoneCountTotal,
+                AcceptPercentSite = x.AcceptPercentSite,
+                HasResults = x.HasResults,
+                Source = x.Source,
+            })
+            .FirstOrDefaultAsync(cancellationToken);
+        if (vote == null)
+        {
+            return null;
+        }
+        await AttachFactionStats(new List<VoteSearchDbModel> { vote }, cancellationToken);
+        vote.DeputyVotes = await reader.Read<DeputyVote>()
+            .Where(x => x.VoteId == vote.Id)
+            .Select(x => new DeputyVoteDbModel
+            {
+                DeputySiteId = x.Deputy.SiteId,
+                FullName = x.Deputy.FullName,
+                SortName = x.Deputy.SortName,
+                FactionCode = x.FactionPeriod != null ? x.FactionPeriod.Faction.Code : null,
+                FactionTitle = x.FactionPeriod != null ? x.FactionPeriod.Title : null,
+                Result = x.Result,
+            })
+            .OrderBy(x => x.SortName)
+            .ThenBy(x => x.DeputySiteId)
+            .ToReadOnlyCollectionAsync(cancellationToken);
+        return vote;
+    }
+
     private static IQueryable<Vote> ApplyFactionCondition(IQueryable<Vote> query, IQueryable<VoteFactionStats> stats, VoteFactionConditionSpec condition)
     {
         var factionId = condition.FactionId;

@@ -1,4 +1,5 @@
-﻿using DumaLens.Services.Contracts;
+﻿using DumaLens.Services.Cards;
+using DumaLens.Services.Contracts;
 using DumaLens.Services.Contracts.Exceptions;
 using DumaLens.Services.Contracts.Models;
 using DumaLens.Services.Search;
@@ -19,6 +20,8 @@ public class ValidateService : IValidateService, IServiceAnchor
         validators = new Dictionary<Type, IValidator>
         {
             [typeof(VoteSearchQueryModel)] = new VoteSearchQueryModelValidator(),
+            [typeof(BillSearchQueryModel)] = new BillSearchQueryModelValidator(),
+            [typeof(DeputyListQueryModel)] = new DeputyListQueryModelValidator(),
         };
     }
 

@@ -21,6 +21,11 @@ public class FactionPeriodDbModel
     public Guid ConvocationId { get; set; }
 
     /// <summary>
+    /// Номер созыва
+    /// </summary>
+    public int ConvocationNumber { get; set; }
+
+    /// <summary>
     /// Идентификатор фракции на сайте голосований
     /// </summary>
     public long SiteId { get; set; }

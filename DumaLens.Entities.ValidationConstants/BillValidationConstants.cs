@@ -9,4 +9,9 @@ public static class BillValidationConstants
     /// Максимальная длина номера законопроекта (например, 500091-8)
     /// </summary>
     public const int NumberMaxLength = 16;
+
+    /// <summary>
+    /// Максимальное число результатов поиска законопроектов по части номера
+    /// </summary>
+    public const int SearchResultLimit = 20;
 }
