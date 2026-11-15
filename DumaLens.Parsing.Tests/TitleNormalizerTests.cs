@@ -81,6 +81,75 @@ public class TitleNormalizerTests
     }
 
     /// <summary>
+    /// При конфликте нескольких совпадений приоритет более специфичного варианта:
+    /// таблица поправок/возврат важнее чтения, чтение важнее «за основу»/«в целом» (04-functionality.md, §2.2)
+    /// </summary>
+    [Theory]
+    [InlineData("(за основу) (третье чтение) О проекте федерального закона № 235269-3", VoteStage.ThirdReading)]
+    [InlineData("(за основу) Пост ГД о О проекте федерального закона № 235269-3 (третье чтение)", VoteStage.ThirdReading)]
+    [InlineData("(в целом) (первое чтение) О проекте федерального закона № 67230-5", VoteStage.FirstReading)]
+    [InlineData("(в целом) Постановление о 1 чтении О проекте федерального закона № 390549-4", VoteStage.FirstReading)]
+    [InlineData("(1 чтение) (за основу) О проекте федерального закона № 84362-4", VoteStage.FirstReading)]
+    [InlineData("(первое чтение; за основу) О проекте федерального закона № 123-4", VoteStage.FirstReading)]
+    [InlineData("(первое чтение) (таблица 2) О проекте федерального закона № 10962-5", VoteStage.SecondReadingRejectedAmendments)]
+    [InlineData("(за основу) (в целом) О проекте федерального закона № 123-4", VoteStage.AsBasis)]
+    public void Normalize_MultipleMatches_PatternPriorityWins(string title, VoteStage expectedStage)
+    {
+        var result = normalizer.Normalize(title);
+
+        result.Stage.Should().Be(expectedStage);
+    }
+
+    /// <summary>
+    /// Номер законопроекта: суффикс 1–2 цифры с границей — «№ 123-456» не усекается молча
+    /// до «123-45», номер не извлекается (fail-closed вместо линковки к чужому законопроекту)
+    /// </summary>
+    [Theory]
+    [InlineData("О проекте федерального закона № 123-45", "123-45")]
+    [InlineData("О проекте федерального закона № 123-456", null)]
+    [InlineData("О проекте федерального закона № 90040257-3", "90040257-3")]
+    [InlineData("О проекте федерального закона №123-4", "123-4")]
+    public void Normalize_BillNumber_SuffixBoundary(string title, string? expectedBillNumber)
+    {
+        var result = normalizer.Normalize(title);
+
+        result.BillNumber.Should().Be(expectedBillNumber);
+    }
+
+    /// <summary>
+    /// Исторические справки («принят в N чтении …») описывают прошлое законопроекта
+    /// и не перебивают стадию текущего голосования
+    /// </summary>
+    [Theory]
+    [InlineData("(к отклонению) О проекте федерального закона № 123-4 (принят в 1 чтении 21.11.08)", VoteStage.Reject)]
+    [InlineData("(второе чтение) О проекте федерального закона № 123-4 (принят в 1 чтении 29.06.11 с названием \"О внесении изменений\")", VoteStage.SecondReading)]
+    [InlineData("(3 чтение) О проекте федерального закона № 123-4 (второе чтение) (принят в 1 чтении 26.11.10)", VoteStage.ThirdReading)]
+    [InlineData("(в целом) О проекте федерального закона № 123-4 (принят в 1 чтении 15.02.02)", VoteStage.AsWhole)]
+    [InlineData("О проекте федерального закона № 44305-5 (принят в 1 чтении 11.12.09)", VoteStage.Unknown)]
+    public void Normalize_HistoricalNotes_DoNotOverrideStage(string title, VoteStage expectedStage)
+    {
+        var result = normalizer.Normalize(title);
+
+        result.Stage.Should().Be(expectedStage);
+    }
+
+    /// <summary>
+    /// Среди чтений и «к отклонению» стадию задаёт ведущая группа; таблица поправок и возврат
+    /// выигрывают у чтений независимо от позиции
+    /// </summary>
+    [Theory]
+    [InlineData("(к отклонению)(третье чтение) О проекте федерального закона № 94401-5", VoteStage.Reject)]
+    [InlineData("(к отклонению) (второе чтение) О проекте федерального закона № 313087-6", VoteStage.Reject)]
+    [InlineData("(второе чтение) (2 чтение таб. 1 принятые поправки) О проекте федерального закона № 249192-6", VoteStage.SecondReadingAcceptedAmendments)]
+    [InlineData("Вернуть во второе чтение (третье чтение) О проекте федерального закона № 451414-6", VoteStage.ReturnToSecondReading)]
+    public void Normalize_LeadingGroup_BeatsTrailing(string title, VoteStage expectedStage)
+    {
+        var result = normalizer.Normalize(title);
+
+        result.Stage.Should().Be(expectedStage);
+    }
+
+    /// <summary>
     /// Пробелы схлопываются, включая неразрывные; края обрезаются
     /// </summary>
     [Fact]
@@ -101,6 +170,58 @@ public class TitleNormalizerTests
         var result = normalizer.Normalize("(2 чтение таб. 1 принятые поправки) О проекте федерального закона № 500091-8");
 
         result.StageRaw.Should().Be("2 чтение таб. 1 принятые поправки");
+    }
+
+    /// <summary>
+    /// StageRaw при конфликте групп — текст группы, выигравшей по приоритету паттерна
+    /// </summary>
+    [Fact]
+    public void Normalize_StageRaw_PriorityWinningGroup()
+    {
+        var result = normalizer.Normalize("(за основу) (третье чтение) О проекте федерального закона № 235269-3");
+
+        result.Stage.Should().Be(VoteStage.ThirdReading);
+        result.StageRaw.Should().Be("третье чтение");
+    }
+
+    /// <summary>
+    /// Пробелы по краям скобочной группы в StageRaw не сохраняются
+    /// </summary>
+    [Fact]
+    public void Normalize_StageRaw_GroupTrimmed()
+    {
+        var result = normalizer.Normalize("(  первое чтение  ) О проекте закона");
+
+        result.StageRaw.Should().Be("первое чтение");
+    }
+
+    /// <summary>
+    /// Длинная скобочная группа со стадийным ключом: StageRaw обрезается до константы
+    /// (иначе COPY в varchar(512) падает на пачке)
+    /// </summary>
+    [Fact]
+    public void Normalize_LongStageGroup_StageRawTruncated()
+    {
+        var result = normalizer.Normalize("(" + new string('х', 600) + " первое чтение)");
+
+        result.Stage.Should().Be(VoteStage.FirstReading);
+        result.StageRaw.Should().NotBeNull();
+        result.StageRaw!.Length.Should().Be(VoteValidationConstants.StageRawMaxLength);
+    }
+
+    /// <summary>
+    /// Длинная ведущая группа процедурной темы и неизвестной стадии: StageRaw обрезается до константы
+    /// </summary>
+    [Theory]
+    [InlineData(") О проекте порядка работы Государственной Думы на 27 июля 2026 года", VoteStage.Procedural)]
+    [InlineData(") О проекте федерального закона № 123-4", VoteStage.Unknown)]
+    public void Normalize_LongLeadGroup_StageRawTruncated(string suffix, VoteStage expectedStage)
+    {
+        var result = normalizer.Normalize("(" + new string('ы', 600) + suffix);
+
+        result.Stage.Should().Be(expectedStage);
+        result.StageRaw.Should().NotBeNull();
+        result.StageRaw!.Length.Should().Be(VoteValidationConstants.StageRawMaxLength);
     }
 
     /// <summary>

@@ -85,6 +85,12 @@ public static class RussianTsQueryBuilder
             {
                 negated = true;
                 index++;
+
+                // «- слово» / «- "фраза"»: пробелы после минуса не теряют отрицание
+                while (index < query.Length && char.IsWhiteSpace(query[index]))
+                {
+                    index++;
+                }
             }
             if (index < query.Length && query[index] == '"')
             {

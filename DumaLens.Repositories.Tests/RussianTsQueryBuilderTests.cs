@@ -67,6 +67,20 @@ public sealed class RussianTsQueryBuilderTests
     }
 
     /// <summary>
+    /// Минус с пробелом перед словом/фразой — отрицание сохраняется (привычный набор «- слово»),
+    /// а не инвертируется в положительный терм
+    /// </summary>
+    [Theory]
+    [InlineData("алкоголь - пиво", "алкоголь:* & !пиво:*")]
+    [InlineData("алкоголь -  \"розничной продажи\"", "алкоголь:* & !(розничной:* <-> продажи:*)")]
+    [InlineData("- пиво", "!пиво:*")]
+    [InlineData("алкоголь -", "алкоголь:*")]
+    public void BuildMinusWithSpaceShouldNegate(string query, string expected)
+    {
+        RussianTsQueryBuilder.Build(query).Should().Be(expected);
+    }
+
+    /// <summary>
     /// OR и | — ИЛИ; И связывает сильнее ИЛИ
     /// </summary>
     [Theory]

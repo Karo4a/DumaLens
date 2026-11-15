@@ -14,15 +14,14 @@ namespace DumaLens.Parsing;
 /// Парсер карточки голосования сайта vote.duma.gov.ru (/vote/{id})
 /// </summary>
 /// <remarks>
-/// Заголовок — h1 (HTML-сущности декодируются AngleSharp), дата — div.date-p span (московское время),
+/// Заголовок — h1 (HTML-сущности декодируются AngleSharp), дата — div.date-p span (московское время
+/// с историческим смещением: +3/+4 до 27.03.2011, +4 в 2011–2014, +3 с 26.10.2014),
 /// код созыва — из ссылок convocation=AAAAAAA8, голоса — JS-массив deputiesData
 /// (regex + System.Text.Json; ФИО — sortName с приоритетом, id депутата — из url).
 /// Пустые голосования имеют deputiesData = [] (HasResults = false).
 /// </remarks>
 public sealed partial class VotePageParser : IVotePageParser
 {
-    private static readonly TimeSpan MoscowOffset = TimeSpan.FromHours(3);
-
     /// <inheritdoc/>
     public ParsedVote Parse(string html, long siteId)
     {
@@ -44,7 +43,7 @@ public sealed partial class VotePageParser : IVotePageParser
                 DateTimeStyles.None,
                 out var votedAt))
         {
-            vote.VotedAt = new DateTimeOffset(votedAt, MoscowOffset);
+            vote.VotedAt = new DateTimeOffset(votedAt, GetMoscowOffset(votedAt));
         }
 
         foreach (var anchor in document.QuerySelectorAll("a[href]"))
@@ -98,7 +97,11 @@ public sealed partial class VotePageParser : IVotePageParser
 
                 deputyVotes.Add(new ParsedDeputyVote
                 {
-                    DeputySiteId = deputyIdMatch.Success ? long.Parse(deputyIdMatch.Groups[1].Value, CultureInfo.InvariantCulture) : 0,
+                    // Переполнение long (id вне диапазона) даёт 0 — карантин MissingDeputyId на валидации
+                    DeputySiteId = deputyIdMatch.Success
+                        && long.TryParse(deputyIdMatch.Groups[1].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var deputyId)
+                            ? deputyId
+                            : 0,
                     FullName = HtmlText.CleanFullName(fullName),
                     FactionSiteId = long.TryParse(deputy.FactionCode, NumberStyles.Integer, CultureInfo.InvariantCulture, out var factionId)
                         ? factionId
@@ -128,6 +131,53 @@ public sealed partial class VotePageParser : IVotePageParser
             "absent" => VoteResult.None,
             _ => null
         };
+    }
+
+    /// <summary>
+    /// Историческое смещение Москвы для локального времени со страницы:
+    /// до 27.03.2011 — +3 зимой/+4 летом (DST с 1981 года), 27.03.2011–26.10.2014 — +4 постоянно,
+    /// с 26.10.2014 — +3 постоянно. Неоднозначный осенний час 02:00–03:00 трактуется как летний
+    /// (первое вхождение); Windows-зона «Russian Standard Time» исторических правил не содержит
+    /// </summary>
+    private static TimeSpan GetMoscowOffset(DateTime local)
+    {
+        if (local >= new DateTime(2014, 10, 26, 2, 0, 0))
+        {
+            return TimeSpan.FromHours(3);
+        }
+
+        if (local >= new DateTime(2011, 3, 27, 2, 0, 0))
+        {
+            return TimeSpan.FromHours(4);
+        }
+
+        if (local.Year < 1981)
+        {
+            return TimeSpan.FromHours(3);
+        }
+
+        if (local.Year == 1981)
+        {
+            // Летнее время в СССР введено 01.04.1981, отменено 01.10.1981
+            return local >= new DateTime(1981, 4, 1) && local < new DateTime(1981, 10, 1)
+                ? TimeSpan.FromHours(4)
+                : TimeSpan.FromHours(3);
+        }
+
+        var dstStart = LastSundayOfMonth(local.Year, 3).AddHours(2);
+        var dstEnd = LastSundayOfMonth(local.Year, 10).AddHours(3);
+        return local >= dstStart && local < dstEnd
+            ? TimeSpan.FromHours(4)
+            : TimeSpan.FromHours(3);
+    }
+
+    /// <summary>
+    /// Последнее воскресенье месяца (границы летнего времени СССР/РФ до 2011 года)
+    /// </summary>
+    private static DateTime LastSundayOfMonth(int year, int month)
+    {
+        var lastDay = new DateTime(year, month, DateTime.DaysInMonth(year, month));
+        return lastDay.AddDays(-(int)lastDay.DayOfWeek);
     }
 
     [GeneratedRegex(@"deputiesData\s*=\s*(\[.*?\]);", RegexOptions.Singleline)]

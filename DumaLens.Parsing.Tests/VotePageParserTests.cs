@@ -126,6 +126,20 @@ public class VotePageParserTests
     }
 
     /// <summary>
+    /// Идентификатор депутата вне диапазона long: DeputySiteId = 0 (карантин на валидации), без исключения
+    /// </summary>
+    [Fact]
+    public void Parse_DeputyIdOverflow_DeputySiteIdIsZero()
+    {
+        const string deputies = "[{\"sortName\":\"Иванов Иван Иванович\",\"url\":\"/?deputy=99999999999999999999\",\"result\":\"for\"}]";
+
+        var vote = parser.Parse(Card(deputies), 1);
+
+        vote.DeputyVotes[0].DeputySiteId.Should().Be(0);
+        vote.DeputyVotes[0].Result.Should().Be(VoteResult.Accept);
+    }
+
+    /// <summary>
     /// Без sortName ФИО берётся из name с удалением HTML-разметки
     /// </summary>
     [Fact]
@@ -203,12 +217,46 @@ public class VotePageParserTests
     }
 
     /// <summary>
+    /// Смещение Москвы историческое: +3/+4 (DST) до 27.03.2011, +4 постоянно в 2011–2014,
+    /// +3 с 26.10.2014; VotedAt и UtcOffsetMinutes согласованы
+    /// </summary>
+    [Theory]
+    [InlineData("15.01.2010 12:00:00", 3)]
+    [InlineData("15.07.2010 12:00:00", 4)]
+    [InlineData("28.03.2010 01:59:00", 3)]
+    [InlineData("28.03.2010 03:00:00", 4)]
+    [InlineData("31.10.2010 03:30:00", 3)]
+    [InlineData("15.01.2012 12:00:00", 4)]
+    [InlineData("15.06.2012 12:00:00", 4)]
+    [InlineData("27.03.2011 01:59:00", 3)]
+    [InlineData("27.03.2011 03:00:00", 4)]
+    [InlineData("26.10.2014 00:30:00", 4)]
+    [InlineData("26.10.2014 02:30:00", 3)]
+    [InlineData("13.03.2024 15:01:13", 3)]
+    public void Parse_HistoricalMoscowOffset(string dateText, int expectedOffsetHours)
+    {
+        var vote = parser.Parse(CardWithDate(dateText, "[]"), 1);
+
+        vote.VotedAt.Should().NotBe(default);
+        vote.UtcOffsetMinutes.Should().Be(expectedOffsetHours * 60);
+        vote.VotedAt.Offset.Should().Be(TimeSpan.FromHours(expectedOffsetHours));
+    }
+
+    /// <summary>
     /// Собирает минимальную карточку с заданным массивом deputiesData
     /// </summary>
     private static string Card(string deputiesJs)
     {
+        return CardWithDate("13.03.2024 15:01:13", deputiesJs);
+    }
+
+    /// <summary>
+    /// Собирает минимальную карточку с заданными датой и массивом deputiesData
+    /// </summary>
+    private static string CardWithDate(string dateText, string deputiesJs)
+    {
         return "<html><body><h1>Тестовое голосование</h1>"
-            + "<div class=\"date-p\"><span>13.03.2024 15:01:13</span></div>"
+            + $"<div class=\"date-p\"><span>{dateText}</span></div>"
             + $"<script>var deputiesData = {deputiesJs};</script></body></html>";
     }
 }

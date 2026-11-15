@@ -13,8 +13,14 @@ namespace DumaLens.Parsing;
 /// Словарь расширен по фактическим заголовкам архива (полный проход 102 320 заголовков):
 /// ведущие маркеры «*»/«**», стадии в скобках и без, свободные заголовки I–III созывов
 /// («ст 10 в целом», «табл 2 откл поправок», «1-чт»). При конфликте приоритет более специфичного
-/// варианта: таблица поправок &gt; чтение &gt; «за основу»/«в целом»; процедурная тема
-/// (порядок работы, повестка, предложения депутатов) приоритетнее способа принятия.
+/// варианта: таблица поправок/возврат &gt; чтение &gt; «за основу»/«в целом». Таблицы и возврат
+/// выигрывают у чтений независимо от позиции; среди чтений и «к отклонению» стадию задаёт ведущая
+/// группа (хвостовые уточнения её не перебивают); «за основу»/«в целом» учитываются, только если
+/// чтение/отклонение не найдены. Исторические справки («принят в 1 чтении 21.11.08 …») стадией
+/// не считаются и исключаются из кандидатов; процедурная тема (порядок работы, повестка,
+/// предложения депутатов) приоритетнее способа принятия.
+/// StageRaw обрезается до <see cref="VoteValidationConstants.StageRawMaxLength"/> на всех путях
+/// (скобочная группа, ведущая группа, фрагмент совпадения, исходный заголовок).
 /// Номер законопроекта: 1–10 цифр (в архиве встречаются 8-значные номера старых созывов,
 /// например 90040257-3) и 1–2 цифры после дефиса; «№» без пробела встречается в 1 643 заголовках.
 /// </remarks>
@@ -33,51 +39,50 @@ public sealed partial class TitleNormalizer : ITitleNormalizer
         }
 
         var core = cleaned.ToLowerInvariant().Replace('ё', 'е').TrimStart('*').TrimStart();
-        var groups = ParenGroupRegex().Matches(core).Select(m => m.Groups[1].Value).ToList();
+        var groups = ParenGroupRegex().Matches(core).Select(m => m.Groups[1].Value.Trim()).ToList();
         var leadGroup = core.StartsWith('(') && groups.Count > 0 ? groups[0] : null;
-        var subject = StripLeadingGroups(core);
+
+        // Исторические справки («принят в 1 чтении 21.11.08 …») описывают прошлое законопроекта,
+        // а не стадию текущего голосования, и не участвуют в определении стадии
+        var stageGroups = groups.Where(group => !HistoricalNoteRegex().IsMatch(group)).ToList();
+        var matchCore = ParenGroupRegex().Replace(
+            core,
+            match => HistoricalNoteRegex().IsMatch(match.Groups[1].Value.Trim()) ? string.Empty : match.Value);
+        matchCore = HtmlText.Clean(matchCore);
+        var subject = StripLeadingGroups(matchCore);
 
         if (MatchesAny(ProceduralPrefixPatterns, subject))
         {
             result.Stage = VoteStage.Procedural;
-            result.StageRaw = leadGroup ?? Truncate(cleaned);
+            result.StageRaw = Truncate(leadGroup ?? cleaned);
             return result;
         }
 
         var candidates = new List<(string Text, bool IsGroup)>();
-        foreach (var group in groups)
+        foreach (var group in stageGroups)
         {
             candidates.Add((group, true));
         }
 
         candidates.Add((subject, false));
-        candidates.Add((core, false));
+        candidates.Add((matchCore, false));
 
-        foreach (var (text, isGroup) in candidates)
+        if (TryMatchStage(result, SpecificStagePatterns, candidates, patternPriority: true)
+            || TryMatchStage(result, ReadingStagePatterns, candidates, patternPriority: false)
+            || TryMatchStage(result, MannerStagePatterns, candidates, patternPriority: false))
         {
-            foreach (var (stage, pattern) in StagePatterns)
-            {
-                var match = pattern.Match(text);
-                if (!match.Success)
-                {
-                    continue;
-                }
-
-                result.Stage = stage;
-                result.StageRaw = isGroup ? text : match.Value;
-                return result;
-            }
+            return result;
         }
 
         if (result.BillNumber is null && MatchesAny(ResolutionPrefixPatterns, subject))
         {
             result.Stage = VoteStage.Procedural;
-            result.StageRaw = leadGroup ?? Truncate(cleaned);
+            result.StageRaw = Truncate(leadGroup ?? cleaned);
             return result;
         }
 
         result.Stage = VoteStage.Unknown;
-        result.StageRaw = leadGroup ?? Truncate(cleaned);
+        result.StageRaw = Truncate(leadGroup ?? cleaned);
         return result;
     }
 
@@ -101,6 +106,36 @@ public sealed partial class TitleNormalizer : ITitleNormalizer
         return rest;
     }
 
+    /// <summary>
+    /// Подбирает стадию по кандидатам: patternPriority задаёт приоритет паттерна над позицией
+    /// (таблицы поправок, возврат), иначе ведущий кандидат важнее хвостовых (чтения, способ принятия)
+    /// </summary>
+    private static bool TryMatchStage(
+        NormalizedTitle result,
+        (VoteStage Stage, Regex Pattern)[] patterns,
+        List<(string Text, bool IsGroup)> candidates,
+        bool patternPriority)
+    {
+        var pairs = patternPriority
+            ? patterns.SelectMany(pattern => candidates.Select(candidate => (pattern.Stage, pattern.Pattern, candidate.Text, candidate.IsGroup)))
+            : candidates.SelectMany(candidate => patterns.Select(pattern => (pattern.Stage, pattern.Pattern, candidate.Text, candidate.IsGroup)));
+
+        foreach (var (stage, pattern, text, isGroup) in pairs)
+        {
+            var match = pattern.Match(text);
+            if (!match.Success)
+            {
+                continue;
+            }
+
+            result.Stage = stage;
+            result.StageRaw = Truncate(isGroup ? text : match.Value);
+            return true;
+        }
+
+        return false;
+    }
+
     private static bool MatchesAny(Regex[] patterns, string text)
     {
         foreach (var pattern in patterns)
@@ -121,26 +156,46 @@ public sealed partial class TitleNormalizer : ITitleNormalizer
             : value[..VoteValidationConstants.StageRawMaxLength];
     }
 
-    [GeneratedRegex(@"№\s*(\d{1,10}-\d{1,2})")]
+    [GeneratedRegex(@"№\s*(\d{1,10}-\d{1,2})(?!\d)")]
     private static partial Regex BillNumberRegex();
 
     [GeneratedRegex(@"\(([^()]*)\)")]
     private static partial Regex ParenGroupRegex();
 
+    [GeneratedRegex(@"^(?:принят|одобрен)\s+(?:в|во)\s")]
+    private static partial Regex HistoricalNoteRegex();
+
     /// <summary>
-    /// Варианты стадий по словарю §2.2 и фактическим заголовкам архива; порядок задаёт приоритет
+    /// Специфичные стадии: возврат и таблицы поправок; приоритет паттерна над позицией в заголовке
+    /// («(второе чтение) (2 чтение таб. 1 …)» — голосование по таблице, а не по чтению в целом)
     /// </summary>
-    private static readonly (VoteStage Stage, Regex Pattern)[] StagePatterns =
+    private static readonly (VoteStage Stage, Regex Pattern)[] SpecificStagePatterns =
     [
         (VoteStage.ReturnToSecondReading, new Regex(@"вернуть\s+(?:во|в)\s+(?:2|второе)\s+чтение", RegexOptions.Compiled)),
         (VoteStage.SecondReadingAcceptedAmendments, new Regex(@"(?<![а-яё])таб\w*\.?\s*1(?!\d)", RegexOptions.Compiled)),
-        (VoteStage.SecondReadingRejectedAmendments, new Regex(@"(?<![а-яё])таб\w*\.?\s*2(?!\d)", RegexOptions.Compiled)),
+        (VoteStage.SecondReadingRejectedAmendments, new Regex(@"(?<![а-яё])таб\w*\.?\s*2(?!\d)", RegexOptions.Compiled))
+    ];
+
+    /// <summary>
+    /// Чтения и «к отклонению»: стадию задаёт ведущая группа, хвостовые не перебивают её
+    /// («(к отклонению) (третье чтение)» — отклонение; «(3 чтение) … (второе чтение)» — третье чтение)
+    /// </summary>
+    private static readonly (VoteStage Stage, Regex Pattern)[] ReadingStagePatterns =
+    [
         (VoteStage.FirstReading, new Regex(@"(?<!\d)(?:перв(?:ое|ом)|1)\s*-?\s*чт", RegexOptions.Compiled)),
         (VoteStage.SecondReading, new Regex(@"(?<!\d)(?:втор(?:ое|ом)|2)\s*-?\s*чт", RegexOptions.Compiled)),
         (VoteStage.ThirdReading, new Regex(@"(?<!\d)(?:треть(?:е|ем)|3)\s*-?\s*чт", RegexOptions.Compiled)),
-        (VoteStage.AsBasis, new Regex(@"за\s+основу", RegexOptions.Compiled)),
-        (VoteStage.AsWhole, new Regex(@"в\s+целом", RegexOptions.Compiled)),
         (VoteStage.Reject, new Regex(@"к\s+отклонению", RegexOptions.Compiled))
+    ];
+
+    /// <summary>
+    /// Способ принятия («за основу», «в целом») — только если чтение/отклонение не найдены
+    /// («(за основу) (первое чтение)» — первое чтение)
+    /// </summary>
+    private static readonly (VoteStage Stage, Regex Pattern)[] MannerStagePatterns =
+    [
+        (VoteStage.AsBasis, new Regex(@"за\s+основу", RegexOptions.Compiled)),
+        (VoteStage.AsWhole, new Regex(@"в\s+целом", RegexOptions.Compiled))
     ];
 
     /// <summary>
