@@ -1,4 +1,5 @@
 ﻿using DumaLens.Importer.Import;
+using DumaLens.Importer.Stats;
 using DumaLens.Importer.Verify;
 using Microsoft.Extensions.DependencyInjection;
 using System.CommandLine;
@@ -6,7 +7,7 @@ using System.CommandLine;
 namespace DumaLens.Importer;
 
 /// <summary>
-/// CLI импорта данных: команды import-archive и verify
+/// CLI импорта данных: команды import-archive, verify и recalc-stats
 /// </summary>
 internal class Program
 {
@@ -14,7 +15,7 @@ internal class Program
     {
         var connectionOption = new Option<string?>("--connection", "Строка подключения PostgreSQL; по умолчанию — переменная окружения ConnectionStrings__DefaultConnection");
 
-        var root = new RootCommand("DumaLens: импорт архива голосований Госдумы и сверка контрольных сумм");
+        var root = new RootCommand("DumaLens: импорт архива голосований Госдумы, сверка контрольных сумм и пересчёт фракционных агрегатов");
         root.AddGlobalOption(connectionOption);
 
         var zipOption = new Option<FileInfo>("--zip", "Путь к архиву vote-master.zip")
@@ -115,6 +116,33 @@ internal class Program
             }
         });
         root.AddCommand(verifyCommand);
+
+        var recalcCommand = new Command("recalc-stats", "Полный пересчёт фракционных агрегатов (VoteFactionStats) из индивидуальных голосов — после исправления данных или карантина");
+        recalcCommand.SetHandler(async invocationContext =>
+        {
+            var cancellationToken = invocationContext.GetCancellationToken();
+            var connection = invocationContext.ParseResult.GetValueForOption(connectionOption);
+
+            try
+            {
+                var connectionString = ImporterHost.ResolveConnectionString(connection);
+                await using var provider = ImporterHost.BuildServiceProvider(connectionString, logFilePath: null);
+                var recalculator = provider.GetRequiredService<StatsRecalculator>();
+                var summary = await recalculator.Recalc(cancellationToken);
+                Console.WriteLine($"Пересчитано строк VoteFactionStats: {summary.RowsRebuilt:N0} за {summary.Elapsed:hh\\:mm\\:ss}");
+                invocationContext.ExitCode = 0;
+            }
+            catch (OperationCanceledException)
+            {
+                invocationContext.ExitCode = 1;
+            }
+            catch (Exception exception)
+            {
+                Console.Error.WriteLine($"Пересчёт завершился ошибкой: {exception}");
+                invocationContext.ExitCode = 1;
+            }
+        });
+        root.AddCommand(recalcCommand);
 
         return await root.InvokeAsync(args);
     }

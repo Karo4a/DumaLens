@@ -4,10 +4,12 @@ using DumaLens.Common.Extensions;
 using DumaLens.Context;
 using DumaLens.Context.Contracts;
 using DumaLens.Importer.Import;
+using DumaLens.Importer.Stats;
 using DumaLens.Importer.Verify;
 using DumaLens.Parsing;
 using DumaLens.Parsing.Contracts;
 using DumaLens.Repositories;
+using DumaLens.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -34,6 +36,7 @@ public static class ImporterHost
         services.AddScoped<IUnitOfWork>(provider => provider.GetRequiredService<DumaLensContext>());
         services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
         services.RegisterAssemblyInterfacesAssignableTo<IRepositoryAnchor>(ServiceLifetime.Scoped);
+        services.RegisterAssemblyInterfacesAssignableTo<DumaLens.Services.IServiceAnchor>(ServiceLifetime.Scoped);
         services.AddSingleton(provider => new ImportLog(provider.GetRequiredService<IDateTimeProvider>(), logFilePath));
         services.AddScoped<IVoteArchiveParser, VoteArchiveParser>();
         services.AddScoped<ITitleNormalizer, TitleNormalizer>();
@@ -41,6 +44,7 @@ public static class ImporterHost
         services.AddScoped<ReferenceCatalog>();
         services.AddScoped<ArchiveImporter>();
         services.AddScoped<ArchiveVerifier>();
+        services.AddScoped<StatsRecalculator>();
         return services.BuildServiceProvider();
     }
 

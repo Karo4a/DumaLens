@@ -24,4 +24,9 @@ public static class CommonValidationConstants
     /// Максимальное значение процента
     /// </summary>
     public const decimal PercentMax = 100m;
+
+    /// <summary>
+    /// Число знаков после запятой при округлении процентов (масштаб 2; половина — от нуля)
+    /// </summary>
+    public const int PercentScale = 2;
 }

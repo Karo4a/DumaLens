@@ -6,6 +6,7 @@
 /// <remarks>
 /// Потоковая таблица без аудита и soft-delete (ADR-2, ADR-7): составной ключ (VoteId, FactionPeriodId).
 /// Проценты — numeric(5,2), null при нулевом знаменателе; базы: от списочного состава и от голосовавших.
+/// База «от голосовавших» — только для accept/decline/abstain: «не голосовал» в неё не входит (Docs/04 §1.2).
 /// </remarks>
 public class VoteFactionStats
 {
@@ -88,11 +89,6 @@ public class VoteFactionStats
     /// Процент «воздержался» от голосовавших
     /// </summary>
     public decimal? AbstainPctVoted { get; set; }
-
-    /// <summary>
-    /// Процент «не голосовал» от голосовавших
-    /// </summary>
-    public decimal? NonePctVoted { get; set; }
 
     /// <summary>
     /// Голосование

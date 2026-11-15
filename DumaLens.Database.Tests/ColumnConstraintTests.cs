@@ -131,7 +131,6 @@ public class ColumnConstraintTests
             x.AcceptPctVoted = null;
             x.DeclinePctVoted = null;
             x.AbstainPctVoted = null;
-            x.NonePctVoted = null;
             x.Vote = null!;
             x.FactionPeriod = null!;
             x.Faction = null!;

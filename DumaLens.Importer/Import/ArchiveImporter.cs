@@ -8,6 +8,7 @@ using DumaLens.Parsing.Contracts;
 using DumaLens.Parsing.Contracts.Models;
 using DumaLens.Repositories.Contracts.Models;
 using DumaLens.Repositories.Contracts.WriteRepositories;
+using DumaLens.Services.Contracts;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using NpgsqlTypes;
@@ -18,13 +19,14 @@ namespace DumaLens.Importer.Import;
 
 /// <summary>
 /// Потоковый импорт архива vote-master.zip: разбор и валидация файлов, upsert голосований,
-/// построение справочников по ходу, массовая вставка индивидуальных голосов через COPY,
-/// карантин аномалий; пачка обрабатывается в одной транзакции
+/// построение справочников по ходу, массовая вставка индивидуальных голосов и фракционных
+/// агрегатов через COPY, карантин аномалий; пачка обрабатывается в одной транзакции
 /// </summary>
 public sealed class ArchiveImporter
 {
     private const string VoteEntryPrefix = "vote-master/poll/";
     private const string CopyCommand = "COPY \"DeputyVotes\" (\"VoteId\", \"DeputyId\", \"FactionPeriodId\", \"Result\") FROM STDIN (FORMAT BINARY)";
+    private const string CopyStatsCommand = "COPY \"VoteFactionStats\" (\"VoteId\", \"FactionPeriodId\", \"FactionId\", \"AcceptCount\", \"DeclineCount\", \"AbstainCount\", \"NoneCount\", \"MemberCount\", \"VotedCount\", \"AcceptPctMembers\", \"DeclinePctMembers\", \"AbstainPctMembers\", \"NonePctMembers\", \"AcceptPctVoted\", \"DeclinePctVoted\", \"AbstainPctVoted\") FROM STDIN (FORMAT BINARY)";
 
     private readonly DumaLensContext context;
     private readonly IReader reader;
@@ -35,6 +37,7 @@ public sealed class ArchiveImporter
     private readonly IVoteArchiveParser parser;
     private readonly ITitleNormalizer normalizer;
     private readonly IVoteParseValidator validator;
+    private readonly IVoteFactionStatsService statsService;
     private readonly IDateTimeProvider dateTimeProvider;
     private readonly ImportLog log;
 
@@ -51,6 +54,7 @@ public sealed class ArchiveImporter
         IVoteArchiveParser parser,
         ITitleNormalizer normalizer,
         IVoteParseValidator validator,
+        IVoteFactionStatsService statsService,
         IDateTimeProvider dateTimeProvider,
         ImportLog log)
     {
@@ -63,6 +67,7 @@ public sealed class ArchiveImporter
         this.parser = parser;
         this.normalizer = normalizer;
         this.validator = validator;
+        this.statsService = statsService;
         this.dateTimeProvider = dateTimeProvider;
         this.log = log;
     }
@@ -104,7 +109,7 @@ public sealed class ArchiveImporter
         }
 
         summary.Elapsed = dateTimeProvider.UtcNow() - startedAt;
-        log.Info($"Импорт завершён за {summary.Elapsed:hh\\:mm\\:ss}: импортировано {summary.Imported:N0}, пропущено {summary.Skipped:N0}, карантин {summary.Quarantined:N0}, индивидуальных голосов {summary.DeputyVotesImported:N0}");
+        log.Info($"Импорт завершён за {summary.Elapsed:hh\\:mm\\:ss}: импортировано {summary.Imported:N0}, пропущено {summary.Skipped:N0}, карантин {summary.Quarantined:N0}, индивидуальных голосов {summary.DeputyVotesImported:N0}, строк фракционной статистики {summary.FactionStatsImported:N0}");
         return summary;
     }
 
@@ -210,7 +215,7 @@ public sealed class ArchiveImporter
 
         await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
 
-        var deputyVoteRows = new List<DeputyVoteRow>();
+        var deputyVotes = new List<DeputyVote>();
         var reprocessedVoteIds = new List<Guid>();
         foreach (var item in validItems)
         {
@@ -284,7 +289,13 @@ public sealed class ArchiveImporter
                         break;
                 }
 
-                deputyVoteRows.Add(new DeputyVoteRow(vote.Id, deputyId, periodId, (short)deputyVote.Result!.Value));
+                deputyVotes.Add(new DeputyVote
+                {
+                    VoteId = vote.Id,
+                    DeputyId = deputyId,
+                    FactionPeriodId = periodId,
+                    Result = deputyVote.Result!.Value,
+                });
             }
 
             vote.AcceptCountTotal = acceptCount;
@@ -334,25 +345,54 @@ public sealed class ArchiveImporter
             log.Info($"Снят карантин с {staleQuarantine.Count} файлов, успешно импортированных в этом проходе");
         }
 
+        var statsRows = BuildFactionStats(deputyVotes);
+
         catalog.FlushUpdates();
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         if (reprocessedVoteIds.Count > 0)
         {
             await context.Set<DeputyVote>().Where(x => reprocessedVoteIds.Contains(x.VoteId)).ExecuteDeleteAsync(cancellationToken);
+            await context.Set<VoteFactionStats>().Where(x => reprocessedVoteIds.Contains(x.VoteId)).ExecuteDeleteAsync(cancellationToken);
         }
 
-        if (deputyVoteRows.Count > 0)
+        if (deputyVotes.Count > 0)
         {
-            await CopyDeputyVotes(deputyVoteRows, cancellationToken);
+            await CopyDeputyVotes(deputyVotes, cancellationToken);
+        }
+
+        if (statsRows.Count > 0)
+        {
+            await CopyFactionStats(statsRows, cancellationToken);
         }
 
         await transaction.CommitAsync(cancellationToken);
-        summary.DeputyVotesImported += deputyVoteRows.Count;
+        summary.DeputyVotesImported += deputyVotes.Count;
+        summary.FactionStatsImported += statsRows.Count;
         summary.Batches++;
     }
 
-    private async Task CopyDeputyVotes(List<DeputyVoteRow> rows, CancellationToken cancellationToken)
+    /// <summary>
+    /// Строит фракционные агрегаты пачки из индивидуальных голосов (формулы — в сервисе, Э4)
+    /// </summary>
+    private List<VoteFactionStats> BuildFactionStats(List<DeputyVote> deputyVotes)
+    {
+        if (deputyVotes.Count == 0)
+        {
+            return [];
+        }
+
+        var factionIdsByPeriod = catalog.GetFactionIdsByPeriodId();
+        var statsRows = new List<VoteFactionStats>();
+        foreach (var voteGroup in deputyVotes.GroupBy(x => x.VoteId))
+        {
+            statsRows.AddRange(statsService.BuildStats(voteGroup.Key, voteGroup.ToList(), factionIdsByPeriod));
+        }
+
+        return statsRows;
+    }
+
+    private async Task CopyDeputyVotes(List<DeputyVote> rows, CancellationToken cancellationToken)
     {
         var connection = (NpgsqlConnection)context.Database.GetDbConnection();
         await using var importer = await connection.BeginBinaryImportAsync(CopyCommand, cancellationToken);
@@ -370,10 +410,50 @@ public sealed class ArchiveImporter
                 await importer.WriteNullAsync(cancellationToken);
             }
 
-            await importer.WriteAsync(row.Result, NpgsqlDbType.Smallint, cancellationToken);
+            await importer.WriteAsync((short)row.Result, NpgsqlDbType.Smallint, cancellationToken);
         }
 
         await importer.CompleteAsync(cancellationToken);
+    }
+
+    private async Task CopyFactionStats(List<VoteFactionStats> rows, CancellationToken cancellationToken)
+    {
+        var connection = (NpgsqlConnection)context.Database.GetDbConnection();
+        await using var importer = await connection.BeginBinaryImportAsync(CopyStatsCommand, cancellationToken);
+        foreach (var row in rows)
+        {
+            await importer.StartRowAsync(cancellationToken);
+            await importer.WriteAsync(row.VoteId, NpgsqlDbType.Uuid, cancellationToken);
+            await importer.WriteAsync(row.FactionPeriodId, NpgsqlDbType.Uuid, cancellationToken);
+            await importer.WriteAsync(row.FactionId, NpgsqlDbType.Uuid, cancellationToken);
+            await importer.WriteAsync(row.AcceptCount, NpgsqlDbType.Integer, cancellationToken);
+            await importer.WriteAsync(row.DeclineCount, NpgsqlDbType.Integer, cancellationToken);
+            await importer.WriteAsync(row.AbstainCount, NpgsqlDbType.Integer, cancellationToken);
+            await importer.WriteAsync(row.NoneCount, NpgsqlDbType.Integer, cancellationToken);
+            await importer.WriteAsync(row.MemberCount, NpgsqlDbType.Integer, cancellationToken);
+            await importer.WriteAsync(row.VotedCount, NpgsqlDbType.Integer, cancellationToken);
+            await WritePercent(importer, row.AcceptPctMembers, cancellationToken);
+            await WritePercent(importer, row.DeclinePctMembers, cancellationToken);
+            await WritePercent(importer, row.AbstainPctMembers, cancellationToken);
+            await WritePercent(importer, row.NonePctMembers, cancellationToken);
+            await WritePercent(importer, row.AcceptPctVoted, cancellationToken);
+            await WritePercent(importer, row.DeclinePctVoted, cancellationToken);
+            await WritePercent(importer, row.AbstainPctVoted, cancellationToken);
+        }
+
+        await importer.CompleteAsync(cancellationToken);
+    }
+
+    private static async Task WritePercent(NpgsqlBinaryImporter importer, decimal? value, CancellationToken cancellationToken)
+    {
+        if (value.HasValue)
+        {
+            await importer.WriteAsync(value.Value, NpgsqlDbType.Numeric, cancellationToken);
+        }
+        else
+        {
+            await importer.WriteNullAsync(cancellationToken);
+        }
     }
 
     private void LogProgress(ImportSummary summary, DateTimeOffset startedAt)

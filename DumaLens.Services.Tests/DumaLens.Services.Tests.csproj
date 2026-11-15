@@ -1,6 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <ProjectReference Include="..\DumaLens.Entities\DumaLens.Entities.csproj" />
+    <ProjectReference Include="..\DumaLens.Entities.Contracts\DumaLens.Entities.Contracts.csproj" />
     <ProjectReference Include="..\DumaLens.Services\DumaLens.Services.csproj" />
     <ProjectReference Include="..\DumaLens.Context.Tests\DumaLens.Context.Tests.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="..\DumaLens.Parsing.Tests\Fixtures\json\archive_*.json" Link="Fixtures\json\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

@@ -260,6 +260,15 @@ public sealed class ReferenceCatalog
     }
 
     /// <summary>
+    /// Сопоставление идентификаторов периодов фракций и канонических фракций
+    /// для построения фракционных агрегатов (Э4)
+    /// </summary>
+    public IReadOnlyDictionary<Guid, Guid> GetFactionIdsByPeriodId()
+    {
+        return periodsByKey.Values.ToDictionary(x => x.Id, x => x.FactionId);
+    }
+
+    /// <summary>
     /// Передать накопленные изменения справочников в репозитории записи (перед SaveChanges пачки)
     /// </summary>
     public void FlushUpdates()

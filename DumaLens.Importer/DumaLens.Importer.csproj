@@ -10,5 +10,6 @@
     <ProjectReference Include="..\DumaLens.Context\DumaLens.Context.csproj" />
     <ProjectReference Include="..\DumaLens.Parsing\DumaLens.Parsing.csproj" />
     <ProjectReference Include="..\DumaLens.Repositories\DumaLens.Repositories.csproj" />
+    <ProjectReference Include="..\DumaLens.Services\DumaLens.Services.csproj" />
   </ItemGroup>
 </Project>

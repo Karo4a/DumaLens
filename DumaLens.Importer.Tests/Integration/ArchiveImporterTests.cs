@@ -40,6 +40,7 @@ public sealed class ArchiveImporterTests
             summary.Skipped.Should().Be(0);
             summary.Quarantined.Should().Be(0);
             summary.DeputyVotesImported.Should().Be(1340, "447 + 444 + 0 + 449 голосов в фикстурах");
+            summary.FactionStatsImported.Should().Be(20, "6 + 10 + 0 + 4 фракций в фикстурах");
 
             await using var context = database.CreateContext();
             var votes = await context.Set<Vote>().AsNoTracking().ToListAsync();
@@ -513,6 +514,7 @@ public sealed class ArchiveImporterTests
         await using var context = database.CreateContext();
         var votes = context.Set<Vote>();
         var deputyVotes = context.Set<DeputyVote>();
+        var statsRows = await context.Set<VoteFactionStats>().AsNoTracking().ToListAsync();
         return new DbCounts(
             await votes.CountAsync(),
             await deputyVotes.CountAsync(),
@@ -529,12 +531,28 @@ public sealed class ArchiveImporterTests
             await deputyVotes.CountAsync(x => x.Result == VoteResult.Decline),
             await deputyVotes.CountAsync(x => x.Result == VoteResult.Abstain),
             await deputyVotes.CountAsync(x => x.Result == VoteResult.None),
-            string.Join("|", await context.Set<Deputy>().OrderBy(x => x.SiteId).Select(x => x.FullName).ToListAsync()));
+            string.Join("|", await context.Set<Deputy>().OrderBy(x => x.SiteId).Select(x => x.FullName).ToListAsync()),
+            statsRows.Count,
+            StatsFingerprint(statsRows));
+    }
+
+    /// <summary>
+    /// Отпечаток фракционных агрегатов без привязки к идентификаторам: реимпорт сохраняет
+    /// все значения, но строки могут получить другие ключи периодов
+    /// </summary>
+    private static string StatsFingerprint(List<VoteFactionStats> rows)
+    {
+        return string.Join("|", rows
+            .OrderBy(x => x.AcceptCount).ThenBy(x => x.DeclineCount).ThenBy(x => x.AbstainCount).ThenBy(x => x.NoneCount)
+            .ThenBy(x => x.MemberCount).ThenBy(x => x.VotedCount)
+            .ThenBy(x => x.AcceptPctMembers).ThenBy(x => x.DeclinePctMembers).ThenBy(x => x.AbstainPctMembers).ThenBy(x => x.NonePctMembers)
+            .ThenBy(x => x.AcceptPctVoted).ThenBy(x => x.DeclinePctVoted).ThenBy(x => x.AbstainPctVoted)
+            .Select(x => FormattableString.Invariant($"{x.AcceptCount},{x.DeclineCount},{x.AbstainCount},{x.NoneCount},{x.MemberCount},{x.VotedCount},{x.AcceptPctMembers},{x.DeclinePctMembers},{x.AbstainPctMembers},{x.NonePctMembers},{x.AcceptPctVoted},{x.DeclinePctVoted},{x.AbstainPctVoted}")));
     }
 
     private sealed record DbCounts(
         long Votes, long DeputyVotes, long Deputies, long Periods, long Memberships, long Bills, long Quarantine,
         long AcceptTotal, long DeclineTotal, long AbstainTotal, long NoneTotal,
         long DeputyAccept, long DeputyDecline, long DeputyAbstain, long DeputyNone,
-        string DeputyNames);
+        string DeputyNames, long StatsRows, string StatsFingerprint);
 }

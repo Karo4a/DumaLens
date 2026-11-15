@@ -10,7 +10,9 @@ namespace DumaLens.Entities.Configurations;
 /// </summary>
 /// <remarks>
 /// Потоковая таблица: составной ключ (VoteId, FactionPeriodId), без аудита и soft-delete (ADR-2, ADR-7).
-/// Проценты — numeric(5,2), индексы под фильтры фракционного сравнения по каждой базе (04-functionality.md, §3).
+/// Проценты — numeric(5,2), NULL при нулевом знаменателе; база «от голосовавших» — только
+/// для accept/decline/abstain («не голосовал» в неё не входит, Docs/04 §1.2).
+/// 7 индексов под фильтры фракционного сравнения (04-functionality.md, §3).
 /// </remarks>
 public class VoteFactionStatsConfiguration : IEntityTypeConfiguration<VoteFactionStats>, IEntityConfiguration
 {
@@ -34,8 +36,6 @@ public class VoteFactionStatsConfiguration : IEntityTypeConfiguration<VoteFactio
             .HasColumnType(CommonValidationConstants.PercentColumnType);
         builder.Property(x => x.AbstainPctVoted)
             .HasColumnType(CommonValidationConstants.PercentColumnType);
-        builder.Property(x => x.NonePctVoted)
-            .HasColumnType(CommonValidationConstants.PercentColumnType);
 
         builder.HasOne(x => x.Vote)
             .WithMany()
@@ -57,6 +57,5 @@ public class VoteFactionStatsConfiguration : IEntityTypeConfiguration<VoteFactio
         builder.HasIndex(x => new { x.FactionId, x.AcceptPctVoted }, $"IX_{nameof(VoteFactionStats)}_{nameof(VoteFactionStats.FactionId)}_{nameof(VoteFactionStats.AcceptPctVoted)}");
         builder.HasIndex(x => new { x.FactionId, x.DeclinePctVoted }, $"IX_{nameof(VoteFactionStats)}_{nameof(VoteFactionStats.FactionId)}_{nameof(VoteFactionStats.DeclinePctVoted)}");
         builder.HasIndex(x => new { x.FactionId, x.AbstainPctVoted }, $"IX_{nameof(VoteFactionStats)}_{nameof(VoteFactionStats.FactionId)}_{nameof(VoteFactionStats.AbstainPctVoted)}");
-        builder.HasIndex(x => new { x.FactionId, x.NonePctVoted }, $"IX_{nameof(VoteFactionStats)}_{nameof(VoteFactionStats.FactionId)}_{nameof(VoteFactionStats.NonePctVoted)}");
     }
 }

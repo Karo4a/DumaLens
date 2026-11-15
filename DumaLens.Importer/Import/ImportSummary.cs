@@ -31,6 +31,11 @@ public sealed class ImportSummary
     public long DeputyVotesImported { get; set; }
 
     /// <summary>
+    /// Записано строк фракционной статистики (VoteFactionStats)
+    /// </summary>
+    public long FactionStatsImported { get; set; }
+
+    /// <summary>
     /// Обработано пачек
     /// </summary>
     public int Batches { get; set; }

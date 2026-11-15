@@ -1628,9 +1628,6 @@ namespace DumaLens.Context.Migrations
                     b.Property<decimal?>("NonePctMembers")
                         .HasColumnType("numeric(5,2)");
 
-                    b.Property<decimal?>("NonePctVoted")
-                        .HasColumnType("numeric(5,2)");
-
                     b.Property<int>("VotedCount")
                         .HasColumnType("integer");
 
@@ -1651,8 +1648,6 @@ namespace DumaLens.Context.Migrations
                     b.HasIndex(new[] { "FactionId", "DeclinePctVoted" }, "IX_VoteFactionStats_FactionId_DeclinePctVoted");
 
                     b.HasIndex(new[] { "FactionId", "NonePctMembers" }, "IX_VoteFactionStats_FactionId_NonePctMembers");
-
-                    b.HasIndex(new[] { "FactionId", "NonePctVoted" }, "IX_VoteFactionStats_FactionId_NonePctVoted");
 
                     b.ToTable("VoteFactionStats", (string)null);
                 });
