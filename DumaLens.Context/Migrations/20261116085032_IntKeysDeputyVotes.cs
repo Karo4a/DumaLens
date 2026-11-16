@@ -24,10 +24,12 @@ namespace DumaLens.Context.Migrations
                 name: "FK_DeputyVotes_Votes_VoteId",
                 table: "DeputyVotes");
 
-            // Узкие ключи справочников: identity заполняет существующие строки последовательностью,
-            // сидовые периоды затем получают фиксированные значения (ADR-14).
-            // ВНИМАНИЕ: миграция рассчитана на пустую DeputyVotes (полный импорт после применения);
-            // перенос существующих данных потребовал бы отдельной миграции с сопоставлением GUID → RowId.
+            // Узкие ключи справочников: identity заполняет существующие строки последовательностью
+            // в физическом порядке строк (после UPDATE он может отличаться от порядка вставки).
+            // Сидовые периоды получают фиксированные значения (ADR-14); чтобы они не столкнулись
+            // со значениями архивных периодов, backfill сначала сдвигается за сидовый диапазон,
+            // затем архивные периоды уплотняются в 57..N (ADR-14).
+            // ВНИМАНИЕ: DeputyVotes пересоздаётся пустой — данные восстанавливаются полным импортом.
             migrationBuilder.AddColumn<int>(
                 name: "RowId",
                 table: "Votes",
@@ -48,6 +50,11 @@ namespace DumaLens.Context.Migrations
                 type: "smallint",
                 nullable: false)
                 .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
+
+            // Сдвиг всех значений backfill за пределы сидового диапазона 1..56:
+            // физический порядок строк после UPDATE мог измениться, и архивный период
+            // мог получить значение из 1..56 — без сдвига UpdateData сидов дал бы дубликат RowId.
+            migrationBuilder.Sql("UPDATE \"FactionPeriods\" SET \"RowId\" = \"RowId\" + 1000;");
 
             migrationBuilder.UpdateData(
                 table: "FactionPeriods",
@@ -440,6 +447,15 @@ namespace DumaLens.Context.Migrations
                 keyValue: new Guid("ff959403-b47e-4f60-bff9-a9d3e24f00d1"),
                 column: "RowId",
                 value: (short)41);
+
+            // Архивные периоды (сдвинутые за 1000) уплотняются в 57..N детерминированно по CreatedAt, Id;
+            // последовательность identity выравнивается по максимуму, чтобы новые периоды не столкнулись с сидами.
+            migrationBuilder.Sql(
+                "UPDATE \"FactionPeriods\" AS f SET \"RowId\" = 56 + r.rn " +
+                "FROM (SELECT \"Id\", row_number() OVER (ORDER BY \"CreatedAt\", \"Id\") AS rn " +
+                "FROM \"FactionPeriods\" WHERE \"RowId\" > 1000) AS r " +
+                "WHERE f.\"Id\" = r.\"Id\";");
+            migrationBuilder.Sql("SELECT setval(pg_get_serial_sequence('\"FactionPeriods\"', 'RowId'), (SELECT MAX(\"RowId\") FROM \"FactionPeriods\"));");
 
             // Типы ключей несовместимы с uuid: потоковая таблица пересоздаётся и наполняется импортом заново
             migrationBuilder.DropTable(
