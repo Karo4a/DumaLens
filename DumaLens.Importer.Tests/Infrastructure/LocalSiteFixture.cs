@@ -33,6 +33,16 @@ public sealed class LocalSiteFixture : IAsyncDisposable
     public ConcurrentQueue<string> Requests { get; } = new();
 
     /// <summary>
+    /// Журнал заголовков Cookie поступивших запросов (пустая строка — заголовка нет)
+    /// </summary>
+    public ConcurrentQueue<string> RequestCookies { get; } = new();
+
+    /// <summary>
+    /// Выдавать Set-Cookie session на каждый ответ (имитация WAF сайта для регресса UseCookies=false)
+    /// </summary>
+    public bool SetSessionCookie { get; set; }
+
+    /// <summary>
     /// Добавить маршрут «путь+запрос → тело ответа»
     /// </summary>
     public void AddRoute(string pathAndQuery, string body, int status = 200)
@@ -54,6 +64,12 @@ public sealed class LocalSiteFixture : IAsyncDisposable
         {
             var key = context.Request.Path + context.Request.QueryString;
             Requests.Enqueue(key);
+            RequestCookies.Enqueue(context.Request.Headers.Cookie.ToString());
+            if (SetSessionCookie)
+            {
+                context.Response.Headers.SetCookie = "session=fixture; Domain=127.0.0.1; path=/";
+            }
+
             if (routes.TryGetValue(key, out var route))
             {
                 context.Response.StatusCode = route.Status;

@@ -51,11 +51,15 @@ public static class ImporterHost
         services.AddScoped<ArchiveVerifier>();
         services.AddSingleton(provider =>
         {
-            // Сайт отдаёт gzip (~17 КБ вместо ~156 КБ на карточку): без запроса сжатия
-            // HttpClient получает полный текст — замеренный узкий место скорости обхода
+            // Сайт отдаёт gzip (~17 КБ вместо ~156 КБ на карточку). UseCookies = false обязателен:
+            // WAF сайта ограничивает скорость одновременных запросов с одной session-cookie до ~4 req/s
+            // (замер: без cookie 24 req/s, с cookie 4,3); кроулеру сессия не нужна.
+            // UseProxy = false — обход прямой, без системного прокси/WPAD.
             var handler = new HttpClientHandler
             {
-                AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate | DecompressionMethods.Brotli,
+                UseCookies = false,
+                UseProxy = false,
+                AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
             };
             var client = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(30) };
             client.DefaultRequestHeaders.UserAgent.ParseAdd("DumaLens/1.0 (educational research crawler)");

@@ -89,6 +89,7 @@ public sealed class VoteCrawlerTests
             site.Requests.Should().Contain("/vote/888888");
             site.Requests.Should().Contain("/?convocation=AAAAAAA8&page=1");
             site.Requests.Should().Contain("/?convocation=AAAAAAA8&page=2");
+            site.RequestCookies.Should().OnlyContain(c => c == "", "WAF сайта ограничивает скорость запросов с session-cookie — кроулер не должен принимать и возвращать cookie");
         }
         finally
         {
@@ -258,6 +259,7 @@ public sealed class VoteCrawlerTests
     private static void AddSiteRoutes(LocalSiteFixture site)
     {
         site.AddRoute("/robots.txt", "User-agent: *\nDisallow:\n");
+        site.SetSessionCookie = true;
         site.AddRoute("/?convocation=AAAAAAA8&page=1", BuildListingPage(
             activePage: 1,
             totalCount: 4,
