@@ -1,4 +1,5 @@
-﻿using DumaLens.Importer.Import;
+﻿using DumaLens.Importer.Crawl;
+using DumaLens.Importer.Import;
 using DumaLens.Importer.Stats;
 using DumaLens.Importer.Verify;
 using Microsoft.Extensions.DependencyInjection;
@@ -7,7 +8,7 @@ using System.CommandLine;
 namespace DumaLens.Importer;
 
 /// <summary>
-/// CLI импорта данных: команды import-archive, verify и recalc-stats
+/// CLI импорта данных: команды import-archive, verify, recalc-stats, restore-schema и crawl
 /// </summary>
 internal class Program
 {
@@ -15,7 +16,7 @@ internal class Program
     {
         var connectionOption = new Option<string?>("--connection", "Строка подключения PostgreSQL; по умолчанию — переменная окружения ConnectionStrings__DefaultConnection");
 
-        var root = new RootCommand("DumaLens: импорт архива голосований Госдумы, сверка контрольных сумм и пересчёт фракционных агрегатов");
+        var root = new RootCommand("DumaLens: импорт архива голосований Госдумы, обход живого сайта, сверка контрольных сумм и пересчёт фракционных агрегатов");
         root.AddGlobalOption(connectionOption);
 
         var zipOption = new Option<FileInfo>("--zip", "Путь к архиву vote-master.zip")
@@ -197,6 +198,100 @@ internal class Program
             }
         });
         root.AddCommand(restoreSchemaCommand);
+
+        var convocationOption = new Option<int>("--convocation", () => 0, "Номер созыва 1–9 (0 — все созывы)");
+        var fromPageOption = new Option<int>("--from-page", () => 1, "Начальная страница листинга (возобновление обхода)");
+        var delayOption = new Option<int>("--delay-ms", () => 1000, "Пауза между запросами к сайту, мс (вежливость; рекомендуется >= 500)");
+        var crawlBatchOption = new Option<int>("--batch", () => 100, "Размер пачки карточек в одной транзакции");
+        var maxCardsOption = new Option<int>("--max-cards", () => 0, "Ограничить число обрабатываемых карточек (0 — все); для пробных прогонов");
+        var baseUrlOption = new Option<string>("--base-url", () => "https://vote.duma.gov.ru", "Базовый URL сайта (для локальных фикстур)");
+        var crawlLogOption = new Option<FileInfo?>("--log", "Файл журнала обхода (дополнительно к stdout)");
+
+        var crawlCommand = new Command("crawl", "Обход живого сайта: листинги созывов, добор итога/процента, загрузка новых карточек (Э7)");
+        crawlCommand.AddOption(convocationOption);
+        crawlCommand.AddOption(fromPageOption);
+        crawlCommand.AddOption(delayOption);
+        crawlCommand.AddOption(crawlBatchOption);
+        crawlCommand.AddOption(maxCardsOption);
+        crawlCommand.AddOption(baseUrlOption);
+        crawlCommand.AddOption(crawlLogOption);
+        crawlCommand.SetHandler(async invocationContext =>
+        {
+            var cancellationToken = invocationContext.GetCancellationToken();
+            var convocation = invocationContext.ParseResult.GetValueForOption(convocationOption);
+            var fromPage = invocationContext.ParseResult.GetValueForOption(fromPageOption);
+            var delayMs = invocationContext.ParseResult.GetValueForOption(delayOption);
+            var batch = invocationContext.ParseResult.GetValueForOption(crawlBatchOption);
+            var maxCards = invocationContext.ParseResult.GetValueForOption(maxCardsOption);
+            var baseUrl = invocationContext.ParseResult.GetValueForOption(baseUrlOption) ?? "https://vote.duma.gov.ru";
+            var logFile = invocationContext.ParseResult.GetValueForOption(crawlLogOption);
+            var connection = invocationContext.ParseResult.GetValueForOption(connectionOption);
+
+            if (convocation is < 0 or > 9)
+            {
+                Console.Error.WriteLine("--convocation должен быть 0 (все созывы) или 1–9");
+                invocationContext.ExitCode = 1;
+                return;
+            }
+
+            if (fromPage < 1)
+            {
+                Console.Error.WriteLine("--from-page должен быть не меньше 1");
+                invocationContext.ExitCode = 1;
+                return;
+            }
+
+            if (delayMs < 0)
+            {
+                Console.Error.WriteLine("--delay-ms должен быть неотрицательным");
+                invocationContext.ExitCode = 1;
+                return;
+            }
+
+            if (batch < 1)
+            {
+                Console.Error.WriteLine("--batch должен быть не меньше 1");
+                invocationContext.ExitCode = 1;
+                return;
+            }
+
+            if (maxCards < 0)
+            {
+                Console.Error.WriteLine("--max-cards должен быть неотрицательным");
+                invocationContext.ExitCode = 1;
+                return;
+            }
+
+            try
+            {
+                var connectionString = ImporterHost.ResolveConnectionString(connection);
+                await using var provider = ImporterHost.BuildServiceProvider(connectionString, logFile?.FullName);
+                var crawler = provider.GetRequiredService<VoteCrawler>();
+                var options = new CrawlOptions
+                {
+                    BaseUrl = baseUrl,
+                    Convocation = convocation,
+                    FromPage = fromPage,
+                    DelayMs = delayMs,
+                    BatchSize = batch,
+                    MaxCards = maxCards,
+                };
+                var summary = await crawler.Crawl(options, cancellationToken);
+                Console.WriteLine($"Обход завершён: новых голосований {summary.NewVotes}, добор итога {summary.OutcomeBackfilled}, пропущено {summary.CardsSkipped}, отсутствует {summary.MissingIds}, карантин {summary.Quarantined}; индивидуальных голосов {summary.DeputyVotesImported}, агрегатов {summary.FactionStatsImported}; длительность {summary.Elapsed.TotalSeconds:F0} с.");
+                invocationContext.ExitCode = 0;
+            }
+            catch (OperationCanceledException)
+            {
+                Console.Error.WriteLine("Обход прерван. Повторный запуск пропустит уже загруженные карточки; для листингов используйте --from-page.");
+                invocationContext.ExitCode = 1;
+            }
+            catch (Exception exception)
+            {
+                Console.Error.WriteLine($"Обход завершился ошибкой: {exception}");
+                invocationContext.ExitCode = 1;
+            }
+        });
+        root.AddCommand(crawlCommand);
 
         return await root.InvokeAsync(args);
     }

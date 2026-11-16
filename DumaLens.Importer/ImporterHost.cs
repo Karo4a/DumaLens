@@ -1,8 +1,9 @@
-using DumaLens.Common;
+﻿using DumaLens.Common;
 using DumaLens.Common.Contracts;
 using DumaLens.Common.Extensions;
 using DumaLens.Context;
 using DumaLens.Context.Contracts;
+using DumaLens.Importer.Crawl;
 using DumaLens.Importer.Import;
 using DumaLens.Importer.Stats;
 using DumaLens.Importer.Verify;
@@ -39,12 +40,23 @@ public static class ImporterHost
         services.RegisterAssemblyInterfacesAssignableTo<DumaLens.Services.IServiceAnchor>(ServiceLifetime.Scoped);
         services.AddSingleton(provider => new ImportLog(provider.GetRequiredService<IDateTimeProvider>(), logFilePath));
         services.AddScoped<IVoteArchiveParser, VoteArchiveParser>();
+        services.AddScoped<IVoteListingParser, VoteListingParser>();
+        services.AddScoped<IVotePageParser, VotePageParser>();
         services.AddScoped<ITitleNormalizer, TitleNormalizer>();
         services.AddScoped<IVoteParseValidator, VoteParseValidator>();
         services.AddScoped<ReferenceCatalog>();
         services.AddScoped<BulkLoadSchema>();
         services.AddScoped<ArchiveImporter>();
         services.AddScoped<ArchiveVerifier>();
+        services.AddSingleton(provider =>
+        {
+            var client = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("DumaLens/1.0 (educational research crawler)");
+            return client;
+        });
+        services.AddScoped<SiteFetcher>();
+        services.AddScoped<RobotsChecker>();
+        services.AddScoped<VoteCrawler>();
         services.AddScoped<StatsRecalculator>();
         return services.BuildServiceProvider();
     }

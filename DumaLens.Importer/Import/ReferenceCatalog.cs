@@ -125,6 +125,30 @@ public sealed class ReferenceCatalog
     }
 
     /// <summary>
+    /// Найти созыв по коду сайта (например, AAAAAAA8); null — код неизвестен
+    /// </summary>
+    public ConvocationDbModel? FindConvocationBySiteCode(string siteCode)
+    {
+        return convocations.FirstOrDefault(x => x.SiteCode == siteCode);
+    }
+
+    /// <summary>
+    /// Найти созыв по номеру (1–9); null — номер неизвестен
+    /// </summary>
+    public ConvocationDbModel? FindConvocationByNumber(int number)
+    {
+        return convocations.FirstOrDefault(x => x.Number == number);
+    }
+
+    /// <summary>
+    /// Все созывы справочника по возрастанию номера
+    /// </summary>
+    public IReadOnlyList<ConvocationDbModel> GetConvocations()
+    {
+        return convocations;
+    }
+
+    /// <summary>
     /// Найти или создать законопроект по номеру из заголовка голосования
     /// </summary>
     public Guid? EnsureBill(string? number)

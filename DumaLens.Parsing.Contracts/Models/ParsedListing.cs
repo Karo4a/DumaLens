@@ -21,6 +21,16 @@ public sealed class ParsedListing
     public IReadOnlyList<ParseIssue> Issues { get; set; } = [];
 
     /// <summary>
+    /// Общее число голосований в листинге из счётчика «Показаны: с … по … из N» (null, если счётчик не найден)
+    /// </summary>
+    public int? TotalCount { get; set; }
+
+    /// <summary>
+    /// Номер текущей страницы из активного элемента пагинации (null, если не найден)
+    /// </summary>
+    public int? CurrentPageNumber { get; set; }
+
+    /// <summary>
     /// Номер последней страницы пагинации (1, если ссылок нет)
     /// </summary>
     public int LastPageNumber => PageNumbers.Count == 0 ? 1 : PageNumbers[^1];

@@ -1,4 +1,4 @@
-using DumaLens.Context.Contracts;
+﻿using DumaLens.Context.Contracts;
 using DumaLens.Entities;
 using DumaLens.Entities.Contracts.Enums;
 using DumaLens.Parsing.Contracts;
@@ -10,7 +10,9 @@ namespace DumaLens.Importer.Verify;
 /// <summary>
 /// Сверка контрольных сумм с паспортом архива: итоги, суммы по созывам и кодам результатов.
 /// Фактические значения включают записи карантина архива (база + карантин = паспорт):
-/// аномальные файлы не попадают в основную базу, но учитываются в сверке по сырому JSON
+/// аномальные файлы не попадают в основную базу, но учитываются в сверке по сырому JSON.
+/// Сверяются только архивные голосования (Source = Archive): голосования живого сайта,
+/// загруженные кроулером (Э7), в паспорт архива не входят
 /// </summary>
 public sealed class ArchiveVerifier
 {
@@ -36,7 +38,7 @@ public sealed class ArchiveVerifier
     public async Task<VerifyReport> Verify(CancellationToken cancellationToken)
     {
         var report = new VerifyReport();
-        var votes = reader.Read<Vote>().NotDeletedAt();
+        var votes = reader.Read<Vote>().NotDeletedAt().Where(x => x.Source == VoteSource.Archive);
         var deputyVotes = reader.Read<DeputyVote>();
 
         var convocations = await reader.Read<Convocation>()
@@ -46,7 +48,11 @@ public sealed class ArchiveVerifier
             .ToListAsync(cancellationToken);
 
         var dbVotes = await votes.CountAsync(cancellationToken);
-        var dbDeputyVotes = await deputyVotes.CountAsync(cancellationToken);
+        var dbDeputyVotes = await (
+            from deputyVote in deputyVotes
+            join vote in votes on deputyVote.VoteId equals vote.RowId
+            select deputyVote)
+        .CountAsync(cancellationToken);
         var votesByConvocation = await votes
             .GroupBy(x => x.ConvocationId)
             .Select(g => new { ConvocationId = g.Key, Count = g.Count() })
@@ -57,14 +63,18 @@ public sealed class ArchiveVerifier
                 group deputyVote by vote.ConvocationId into g
                 select new { ConvocationId = g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.ConvocationId, x => (long)x.Count, cancellationToken);
-        var resultTotals = await deputyVotes
-            .GroupBy(x => x.Result)
-            .Select(g => new { Result = g.Key, Count = g.Count() })
+        var resultTotals = await (
+                from deputyVote in deputyVotes
+                join vote in votes on deputyVote.VoteId equals vote.RowId
+                group deputyVote by deputyVote.Result into g
+                select new { Result = g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.Result, x => (long)x.Count, cancellationToken);
         var dbEmptyVotes = await votes.CountAsync(x => !x.HasResults, cancellationToken);
-        var dbBillNumbers = await reader.Read<Bill>()
-            .NotDeletedAt()
-            .Select(x => x.Number)
+        var dbBillNumbers = await (
+                from vote in votes
+                where vote.BillId != null
+                join bill in reader.Read<Bill>().NotDeletedAt() on vote.BillId equals bill.Id
+                select bill.Number)
             .ToListAsync(cancellationToken);
 
         var quarantine = await SumQuarantine(convocations, cancellationToken);

@@ -70,6 +70,22 @@ public sealed partial class VoteListingParser : IVoteListingParser
             }
         }
 
+        var countText = document.QuerySelector("div.page-nave-count")?.TextContent;
+        if (countText is not null)
+        {
+            var totalMatch = TotalCountRegex().Match(countText);
+            if (totalMatch.Success && int.TryParse(totalMatch.Groups[1].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var totalCount))
+            {
+                listing.TotalCount = totalCount;
+            }
+        }
+
+        var activePageText = document.QuerySelector("span.page-nave-act")?.TextContent?.Trim();
+        if (int.TryParse(activePageText, NumberStyles.Integer, CultureInfo.InvariantCulture, out var currentPage))
+        {
+            listing.CurrentPageNumber = currentPage;
+        }
+
         listing.Items = items;
         listing.PageNumbers = pageNumbers.ToList();
         listing.Issues = issues;
@@ -150,6 +166,9 @@ public sealed partial class VoteListingParser : IVoteListingParser
 
     [GeneratedRegex(@"[?&]page=(\d+)")]
     private static partial Regex PageNumberRegex();
+
+    [GeneratedRegex(@"из\s+(\d+)")]
+    private static partial Regex TotalCountRegex();
 
     [GeneratedRegex(@"За:\s*(\d+)")]
     private static partial Regex AcceptCountRegex();

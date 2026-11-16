@@ -25,6 +25,8 @@ public class VoteListingParserTests
         listing.Issues.Should().BeEmpty();
         listing.PageNumbers.Should().BeEquivalentTo([1, 2, 3, 4, 5, 6, 7, 8, 833, 834, 835]);
         listing.LastPageNumber.Should().Be(835);
+        listing.TotalCount.Should().Be(16689);
+        listing.CurrentPageNumber.Should().Be(1);
 
         var first = listing.Items[0];
         first.SiteId.Should().Be(135715);
@@ -47,6 +49,8 @@ public class VoteListingParserTests
 
         listing.Items.Should().HaveCount(20);
         listing.LastPageNumber.Should().Be(22);
+        listing.TotalCount.Should().Be(437);
+        listing.CurrentPageNumber.Should().Be(1);
 
         var first = listing.Items[0];
         first.SiteId.Should().Be(136413);
@@ -66,6 +70,7 @@ public class VoteListingParserTests
 
         listing.Items.Should().HaveCount(20);
         listing.LastPageNumber.Should().Be(760);
+        listing.TotalCount.Should().Be(15198);
 
         var rejected = listing.Items.Single(i => i.SiteId == 16384);
         rejected.Title.Should().Be("(предл деп Зиятдиновой: включить ФЗ в повестку) О проекте порядка работы Государственной Думы на 28 ноября 2003 года");
@@ -87,6 +92,8 @@ public class VoteListingParserTests
 
         listing.Items.Should().HaveCount(9);
         listing.LastPageNumber.Should().Be(835);
+        listing.TotalCount.Should().Be(16689);
+        listing.CurrentPageNumber.Should().Be(835);
         listing.Items.Select(i => i.SiteId).Should().Equal(Enumerable.Range(115589, 9).Select(n => (long)n));
         listing.Items.Should().OnlyContain(i => i.VotedAt.Date == new DateTime(2021, 10, 12));
     }
@@ -107,6 +114,8 @@ public class VoteListingParserTests
         listing.Items[3].VotedAt.Date.Should().Be(new DateTime(2024, 2, 13));
         listing.PageNumbers.Should().BeEmpty();
         listing.LastPageNumber.Should().Be(1);
+        listing.TotalCount.Should().Be(4);
+        listing.CurrentPageNumber.Should().BeNull();
         listing.Issues.Should().BeEmpty();
     }
 
@@ -120,6 +129,8 @@ public class VoteListingParserTests
 
         listing.Items.Should().BeEmpty();
         listing.LastPageNumber.Should().Be(1);
+        listing.TotalCount.Should().BeNull();
+        listing.CurrentPageNumber.Should().BeNull();
         listing.Issues.Should().BeEmpty();
     }
 
