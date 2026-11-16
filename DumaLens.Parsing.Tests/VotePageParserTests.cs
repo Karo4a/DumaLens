@@ -48,13 +48,13 @@ public class VotePageParserTests
     }
 
     /// <summary>
-    /// Карточка 135715 в новой разметке сайта (16.11.2026): deputiesData присваивается без var,
-    /// JSON с дополнительными полями letter/name — разбор не зависит от шаблона объявления
+    /// Живая карточка 135715 (VIII созыв, «за основу», 433 депутата): присваивание
+    /// deputiesData после var-списка, JSON с полями letter/name — разметка стабильна с Э2
     /// </summary>
     [Fact]
-    public void Parse_NewTemplateCard135715_ExtractsAllFields()
+    public void Parse_LiveCard135715_ExtractsAllFields()
     {
-        var vote = parser.Parse(FixtureFiles.Html("vote_new_template.html"), 135715);
+        var vote = parser.Parse(FixtureFiles.Html("vote_135715.html"), 135715);
 
         vote.SiteId.Should().Be(135715);
         vote.Title.Should().Be("(за основу) О проекте порядка работы Государственной Думы на 27 июля 2026 года");
