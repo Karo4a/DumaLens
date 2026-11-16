@@ -204,6 +204,7 @@ internal class Program
         var delayOption = new Option<int>("--delay-ms", () => 1000, "Пауза между запросами к сайту, мс (вежливость; рекомендуется >= 500)");
         var crawlBatchOption = new Option<int>("--batch", () => 100, "Размер пачки карточек в одной транзакции");
         var maxCardsOption = new Option<int>("--max-cards", () => 0, "Ограничить число обрабатываемых карточек (0 — все); для пробных прогонов");
+        var parallelOption = new Option<int>("--parallel", () => 1, "Число одновременных запросов карточек (1 — последовательно; рекомендуется <= 8)");
         var baseUrlOption = new Option<string>("--base-url", () => "https://vote.duma.gov.ru", "Базовый URL сайта (для локальных фикстур)");
         var crawlLogOption = new Option<FileInfo?>("--log", "Файл журнала обхода (дополнительно к stdout)");
 
@@ -213,6 +214,7 @@ internal class Program
         crawlCommand.AddOption(delayOption);
         crawlCommand.AddOption(crawlBatchOption);
         crawlCommand.AddOption(maxCardsOption);
+        crawlCommand.AddOption(parallelOption);
         crawlCommand.AddOption(baseUrlOption);
         crawlCommand.AddOption(crawlLogOption);
         crawlCommand.SetHandler(async invocationContext =>
@@ -223,6 +225,7 @@ internal class Program
             var delayMs = invocationContext.ParseResult.GetValueForOption(delayOption);
             var batch = invocationContext.ParseResult.GetValueForOption(crawlBatchOption);
             var maxCards = invocationContext.ParseResult.GetValueForOption(maxCardsOption);
+            var parallel = invocationContext.ParseResult.GetValueForOption(parallelOption);
             var baseUrl = invocationContext.ParseResult.GetValueForOption(baseUrlOption) ?? "https://vote.duma.gov.ru";
             var logFile = invocationContext.ParseResult.GetValueForOption(crawlLogOption);
             var connection = invocationContext.ParseResult.GetValueForOption(connectionOption);
@@ -262,6 +265,13 @@ internal class Program
                 return;
             }
 
+            if (parallel < 1)
+            {
+                Console.Error.WriteLine("--parallel должен быть не меньше 1");
+                invocationContext.ExitCode = 1;
+                return;
+            }
+
             try
             {
                 var connectionString = ImporterHost.ResolveConnectionString(connection);
@@ -275,6 +285,7 @@ internal class Program
                     DelayMs = delayMs,
                     BatchSize = batch,
                     MaxCards = maxCards,
+                    Parallel = parallel,
                 };
                 var summary = await crawler.Crawl(options, cancellationToken);
                 Console.WriteLine($"Обход завершён: новых голосований {summary.NewVotes}, добор итога {summary.OutcomeBackfilled}, пропущено {summary.CardsSkipped}, отсутствует {summary.MissingIds}, карантин {summary.Quarantined}; индивидуальных голосов {summary.DeputyVotesImported}, агрегатов {summary.FactionStatsImported}; длительность {summary.Elapsed.TotalSeconds:F0} с.");

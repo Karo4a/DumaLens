@@ -169,7 +169,46 @@ public sealed class VoteCrawlerTests
         }
     }
 
-    private static async Task<CrawlSummary> RunCrawl(string connectionString, string baseUrl, int maxCards = 0)
+    /// <summary>
+    /// Параллельная загрузка карточек (--parallel) даёт тот же результат, что последовательная:
+    /// состав импорта, карантин и пропуск существующих не зависят от параллельности
+    /// </summary>
+    [SkippableFact]
+    public async Task Crawl_ParallelFetch_SameResultsAsSequential()
+    {
+        var database = new DatabaseFixture();
+        await database.InitializeAsync();
+        Skip.If(database.SkipReason != null, database.SkipReason);
+        await using var site = new LocalSiteFixture();
+        try
+        {
+            await SeedExistingVote(database);
+            AddSiteRoutes(site);
+            await site.StartAsync();
+
+            var summary = await RunCrawl(database.ConnectionString, site.BaseUrl, maxCards: 0, parallel: 4);
+
+            summary.NewVotes.Should().Be(1);
+            summary.OutcomeBackfilled.Should().Be(1);
+            summary.MissingIds.Should().Be(1);
+            summary.Quarantined.Should().Be(1);
+            summary.CardsSkipped.Should().Be(1);
+            site.Requests.Should().Contain("/vote/888888");
+            site.Requests.Should().Contain("/vote/999999");
+            site.Requests.Should().Contain("/vote/777777");
+            site.Requests.Should().NotContain("/vote/126282");
+
+            await using var context = database.CreateContext();
+            (await context.Set<Vote>().AsNoTracking().CountAsync()).Should().Be(2);
+            (await context.Set<ImportQuarantine>().AsNoTracking().CountAsync()).Should().Be(1);
+        }
+        finally
+        {
+            await database.DisposeAsync();
+        }
+    }
+
+    private static async Task<CrawlSummary> RunCrawl(string connectionString, string baseUrl, int maxCards = 0, int parallel = 1)
     {
         await using var provider = ImporterHost.BuildServiceProvider(connectionString, null);
         await using var scope = provider.CreateAsyncScope();
@@ -182,6 +221,7 @@ public sealed class VoteCrawlerTests
             DelayMs = 0,
             BatchSize = 2,
             MaxCards = maxCards,
+            Parallel = parallel,
         };
         return await crawler.Crawl(options, CancellationToken.None);
     }

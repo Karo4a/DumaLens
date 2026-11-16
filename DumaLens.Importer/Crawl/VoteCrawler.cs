@@ -233,6 +233,11 @@ public sealed class VoteCrawler
         {
             throw new ArgumentException("MaxCards должен быть неотрицательным", nameof(options));
         }
+
+        if (options.Parallel < 1)
+        {
+            throw new ArgumentException("Parallel должен быть не меньше 1", nameof(options));
+        }
     }
 
     /// <summary>
@@ -294,7 +299,8 @@ public sealed class VoteCrawler
                 break;
             }
 
-            await FlushCardBatch(batch, options, summary, existingBySiteId, quarantinedUrls, cancellationToken);
+            var prefetched = await PrefetchCards(batch, options, cancellationToken);
+            await FlushCardBatch(prefetched, options, summary, existingBySiteId, quarantinedUrls, cancellationToken);
             log.Info($"Карточки: обработано {processed}, новых {summary.NewVotes}, отсутствует {summary.MissingIds}, карантин {summary.Quarantined}");
         }
 
@@ -302,10 +308,48 @@ public sealed class VoteCrawler
     }
 
     /// <summary>
-    /// Пачка карточек: разбор → валидация → голоса/карантин → SaveChanges → COPY голосов и агрегатов → коммит
+    /// Загрузка карточек пачки вне транзакции: последовательно или с ограниченной параллельностью
+    /// (пауза DelayMs перед каждым запросом); порядок результатов совпадает с порядком очереди
+    /// </summary>
+    private async Task<List<CardHtml>> PrefetchCards(List<CardRequest> batch, CrawlOptions options, CancellationToken cancellationToken)
+    {
+        var baseUrl = options.BaseUrl.TrimEnd('/');
+        var results = new CardHtml[batch.Count];
+        if (options.Parallel == 1)
+        {
+            for (var i = 0; i < batch.Count; i++)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var html = await fetcher.FetchAsync($"{baseUrl}/vote/{batch[i].SiteId}", options.DelayMs, cancellationToken);
+                results[i] = new CardHtml(batch[i], html);
+            }
+
+            return results.ToList();
+        }
+
+        using var throttle = new SemaphoreSlim(options.Parallel);
+        var tasks = batch.Select(async (request, index) =>
+        {
+            await throttle.WaitAsync(cancellationToken);
+            try
+            {
+                var html = await fetcher.FetchAsync($"{baseUrl}/vote/{request.SiteId}", options.DelayMs, cancellationToken);
+                results[index] = new CardHtml(request, html);
+            }
+            finally
+            {
+                throttle.Release();
+            }
+        }).ToArray();
+        await Task.WhenAll(tasks);
+        return results.ToList();
+    }
+
+    /// <summary>
+    /// Пачка загруженных карточек: разбор → валидация → голоса/карантин → SaveChanges → COPY голосов и агрегатов → коммит
     /// </summary>
     private async Task FlushCardBatch(
-        List<CardRequest> batch,
+        List<CardHtml> prefetched,
         CrawlOptions options,
         CrawlSummary summary,
         Dictionary<long, ExistingVoteRow> existingBySiteId,
@@ -315,11 +359,12 @@ public sealed class VoteCrawler
         var baseUrl = options.BaseUrl.TrimEnd('/');
         var pending = new List<DeputyVoteLink>();
         await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
-        foreach (var request in batch)
+        foreach (var card in prefetched)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            var request = card.Request;
             var url = $"{baseUrl}/vote/{request.SiteId}";
-            var html = await fetcher.FetchAsync(url, options.DelayMs, cancellationToken);
+            var html = card.Html;
             if (html is null)
             {
                 summary.MissingIds++;
@@ -477,4 +522,6 @@ public sealed class VoteCrawler
     private sealed record BackfillValue(VoteOutcome Outcome, decimal? AcceptPercentSite);
 
     private sealed record CardRequest(long SiteId, ParsedListingItem Item, Guid ExpectedConvocationId);
+
+    private sealed record CardHtml(CardRequest Request, string? Html);
 }

@@ -34,4 +34,9 @@ public sealed class CrawlOptions
     /// Ограничение числа обрабатываемых карточек (0 — без ограничения; для пробных прогонов)
     /// </summary>
     public int MaxCards { get; set; }
+
+    /// <summary>
+    /// Число одновременных запросов карточек (1 — последовательно; рекомендуется не более 8)
+    /// </summary>
+    public int Parallel { get; set; } = 1;
 }

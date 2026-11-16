@@ -1,4 +1,4 @@
-using DumaLens.Common.Contracts;
+﻿using DumaLens.Common.Contracts;
 using System.Text;
 
 namespace DumaLens.Importer.Import;
@@ -10,6 +10,7 @@ public sealed class ImportLog : IDisposable
 {
     private readonly IDateTimeProvider dateTimeProvider;
     private readonly StreamWriter? writer;
+    private readonly object writeLock = new();
 
     /// <summary>
     /// Конструктор
@@ -53,7 +54,10 @@ public sealed class ImportLog : IDisposable
     private void Write(string level, string message)
     {
         var line = $"{dateTimeProvider.UtcNow():yyyy-MM-dd HH:mm:ss} UTC [{level}] {message}";
-        Console.WriteLine(line);
-        writer?.WriteLine(line);
+        lock (writeLock)
+        {
+            Console.WriteLine(line);
+            writer?.WriteLine(line);
+        }
     }
 }
