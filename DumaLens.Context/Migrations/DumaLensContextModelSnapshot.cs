@@ -216,6 +216,12 @@ namespace DumaLens.Context.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
 
+                    b.Property<int>("RowId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("RowId"));
+
                     b.Property<long>("SiteId")
                         .HasColumnType("bigint");
 
@@ -230,6 +236,9 @@ namespace DumaLens.Context.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex(new[] { "FullName" }, "IX_Deputy_FullName");
+
+                    b.HasIndex(new[] { "RowId" }, "IX_Deputy_RowId")
+                        .IsUnique();
 
                     b.HasIndex(new[] { "SiteId" }, "IX_Deputy_SiteId")
                         .IsUnique()
@@ -278,14 +287,14 @@ namespace DumaLens.Context.Migrations
 
             modelBuilder.Entity("DumaLens.Entities.DeputyVote", b =>
                 {
-                    b.Property<Guid>("VoteId")
-                        .HasColumnType("uuid");
+                    b.Property<int>("VoteId")
+                        .HasColumnType("integer");
 
-                    b.Property<Guid>("DeputyId")
-                        .HasColumnType("uuid");
+                    b.Property<int>("DeputyId")
+                        .HasColumnType("integer");
 
-                    b.Property<Guid?>("FactionPeriodId")
-                        .HasColumnType("uuid");
+                    b.Property<short?>("FactionPeriodId")
+                        .HasColumnType("smallint");
 
                     b.Property<short>("Result")
                         .HasColumnType("smallint");
@@ -561,6 +570,12 @@ namespace DumaLens.Context.Migrations
                     b.Property<Guid>("FactionId")
                         .HasColumnType("uuid");
 
+                    b.Property<short>("RowId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("smallint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<short>("RowId"));
+
                     b.Property<long>("SiteId")
                         .HasColumnType("bigint");
 
@@ -578,6 +593,9 @@ namespace DumaLens.Context.Migrations
 
                     b.HasIndex(new[] { "FactionId" }, "IX_FactionPeriod_FactionId");
 
+                    b.HasIndex(new[] { "RowId" }, "IX_FactionPeriod_RowId")
+                        .IsUnique();
+
                     b.HasIndex(new[] { "SiteId", "ConvocationId" }, "IX_FactionPeriod_SiteId_ConvocationId")
                         .IsUnique()
                         .HasFilter("\"DeletedAt\" IS NULL");
@@ -593,6 +611,7 @@ namespace DumaLens.Context.Migrations
                             DateFrom = new DateOnly(1994, 1, 11),
                             DateTo = new DateOnly(1995, 12, 31),
                             FactionId = new Guid("6699bf12-62aa-4157-8ce5-ba600cc9b3a1"),
+                            RowId = (short)1,
                             SiteId = 72100004L,
                             Title = "КПРФ",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
@@ -605,6 +624,7 @@ namespace DumaLens.Context.Migrations
                             DateFrom = new DateOnly(1996, 1, 1),
                             DateTo = new DateOnly(1999, 12, 31),
                             FactionId = new Guid("6699bf12-62aa-4157-8ce5-ba600cc9b3a1"),
+                            RowId = (short)2,
                             SiteId = 72100004L,
                             Title = "КПРФ",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
@@ -617,6 +637,7 @@ namespace DumaLens.Context.Migrations
                             DateFrom = new DateOnly(2000, 1, 1),
                             DateTo = new DateOnly(2003, 12, 31),
                             FactionId = new Guid("6699bf12-62aa-4157-8ce5-ba600cc9b3a1"),
+                            RowId = (short)3,
                             SiteId = 72100004L,
                             Title = "КПРФ",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
@@ -629,6 +650,7 @@ namespace DumaLens.Context.Migrations
                             DateFrom = new DateOnly(2004, 1, 1),
                             DateTo = new DateOnly(2007, 12, 31),
                             FactionId = new Guid("6699bf12-62aa-4157-8ce5-ba600cc9b3a1"),
+                            RowId = (short)4,
                             SiteId = 72100004L,
                             Title = "КПРФ",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
@@ -641,6 +663,7 @@ namespace DumaLens.Context.Migrations
                             DateFrom = new DateOnly(2008, 1, 1),
                             DateTo = new DateOnly(2011, 12, 20),
                             FactionId = new Guid("6699bf12-62aa-4157-8ce5-ba600cc9b3a1"),
+                            RowId = (short)5,
                             SiteId = 72100004L,
                             Title = "КПРФ",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
@@ -653,6 +676,7 @@ namespace DumaLens.Context.Migrations
                             DateFrom = new DateOnly(2011, 12, 21),
                             DateTo = new DateOnly(2016, 10, 4),
                             FactionId = new Guid("6699bf12-62aa-4157-8ce5-ba600cc9b3a1"),
+                            RowId = (short)6,
                             SiteId = 72100004L,
                             Title = "КПРФ",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
@@ -665,6 +689,7 @@ namespace DumaLens.Context.Migrations
                             DateFrom = new DateOnly(2016, 10, 5),
                             DateTo = new DateOnly(2021, 10, 11),
                             FactionId = new Guid("6699bf12-62aa-4157-8ce5-ba600cc9b3a1"),
+                            RowId = (short)7,
                             SiteId = 72100004L,
                             Title = "КПРФ",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
@@ -677,6 +702,7 @@ namespace DumaLens.Context.Migrations
                             DateFrom = new DateOnly(2021, 10, 12),
                             DateTo = new DateOnly(2026, 9, 29),
                             FactionId = new Guid("6699bf12-62aa-4157-8ce5-ba600cc9b3a1"),
+                            RowId = (short)8,
                             SiteId = 72100004L,
                             Title = "КПРФ",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
@@ -689,6 +715,7 @@ namespace DumaLens.Context.Migrations
                             DateFrom = new DateOnly(1994, 1, 11),
                             DateTo = new DateOnly(1995, 12, 31),
                             FactionId = new Guid("b5265678-a153-4ade-9010-022275aabac6"),
+                            RowId = (short)9,
                             SiteId = 72100005L,
                             Title = "ЛДПР",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
@@ -701,6 +728,7 @@ namespace DumaLens.Context.Migrations
                             DateFrom = new DateOnly(1996, 1, 1),
                             DateTo = new DateOnly(1999, 12, 31),
                             FactionId = new Guid("b5265678-a153-4ade-9010-022275aabac6"),
+                            RowId = (short)10,
                             SiteId = 72100005L,
                             Title = "ЛДПР",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
@@ -713,6 +741,7 @@ namespace DumaLens.Context.Migrations
                             DateFrom = new DateOnly(2000, 1, 1),
                             DateTo = new DateOnly(2003, 12, 31),
                             FactionId = new Guid("b5265678-a153-4ade-9010-022275aabac6"),
+                            RowId = (short)11,
                             SiteId = 72100005L,
                             Title = "ЛДПР",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
@@ -725,6 +754,7 @@ namespace DumaLens.Context.Migrations
                             DateFrom = new DateOnly(2004, 1, 1),
                             DateTo = new DateOnly(2007, 12, 31),
                             FactionId = new Guid("b5265678-a153-4ade-9010-022275aabac6"),
+                            RowId = (short)12,
                             SiteId = 72100005L,
                             Title = "ЛДПР",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
@@ -737,6 +767,7 @@ namespace DumaLens.Context.Migrations
                             DateFrom = new DateOnly(2008, 1, 1),
                             DateTo = new DateOnly(2011, 12, 20),
                             FactionId = new Guid("b5265678-a153-4ade-9010-022275aabac6"),
+                            RowId = (short)13,
                             SiteId = 72100005L,
                             Title = "ЛДПР",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
@@ -749,6 +780,7 @@ namespace DumaLens.Context.Migrations
                             DateFrom = new DateOnly(2011, 12, 21),
                             DateTo = new DateOnly(2016, 10, 4),
                             FactionId = new Guid("b5265678-a153-4ade-9010-022275aabac6"),
+                            RowId = (short)14,
                             SiteId = 72100005L,
                             Title = "ЛДПР",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
@@ -761,6 +793,7 @@ namespace DumaLens.Context.Migrations
                             DateFrom = new DateOnly(2016, 10, 5),
                             DateTo = new DateOnly(2021, 10, 11),
                             FactionId = new Guid("b5265678-a153-4ade-9010-022275aabac6"),
+                            RowId = (short)15,
                             SiteId = 72100005L,
                             Title = "ЛДПР",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
@@ -773,6 +806,7 @@ namespace DumaLens.Context.Migrations
                             DateFrom = new DateOnly(2021, 10, 12),
                             DateTo = new DateOnly(2026, 9, 29),
                             FactionId = new Guid("b5265678-a153-4ade-9010-022275aabac6"),
+                            RowId = (short)16,
                             SiteId = 72100005L,
                             Title = "ЛДПР",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
@@ -785,6 +819,7 @@ namespace DumaLens.Context.Migrations
                             DateFrom = new DateOnly(1994, 1, 11),
                             DateTo = new DateOnly(1995, 12, 31),
                             FactionId = new Guid("d042a040-8020-406c-91db-944e0efa5f74"),
+                            RowId = (short)17,
                             SiteId = 72100011L,
                             Title = "Вне фракций",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
@@ -797,6 +832,7 @@ namespace DumaLens.Context.Migrations
                             DateFrom = new DateOnly(1996, 1, 1),
                             DateTo = new DateOnly(1999, 12, 31),
                             FactionId = new Guid("d042a040-8020-406c-91db-944e0efa5f74"),
+                            RowId = (short)18,
                             SiteId = 72100011L,
                             Title = "Вне фракций",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
@@ -809,6 +845,7 @@ namespace DumaLens.Context.Migrations
                             DateFrom = new DateOnly(2000, 1, 1),
                             DateTo = new DateOnly(2003, 12, 31),
                             FactionId = new Guid("d042a040-8020-406c-91db-944e0efa5f74"),
+                            RowId = (short)19,
                             SiteId = 72100011L,
                             Title = "Вне фракций",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
@@ -821,6 +858,7 @@ namespace DumaLens.Context.Migrations
                             DateFrom = new DateOnly(2004, 1, 1),
                             DateTo = new DateOnly(2007, 12, 31),
                             FactionId = new Guid("d042a040-8020-406c-91db-944e0efa5f74"),
+                            RowId = (short)20,
                             SiteId = 72100011L,
                             Title = "Вне фракций",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
@@ -833,6 +871,7 @@ namespace DumaLens.Context.Migrations
                             DateFrom = new DateOnly(2016, 10, 5),
                             DateTo = new DateOnly(2021, 10, 11),
                             FactionId = new Guid("d042a040-8020-406c-91db-944e0efa5f74"),
+                            RowId = (short)21,
                             SiteId = 72100011L,
                             Title = "Вне фракций",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
@@ -845,6 +884,7 @@ namespace DumaLens.Context.Migrations
                             DateFrom = new DateOnly(2021, 10, 12),
                             DateTo = new DateOnly(2026, 9, 29),
                             FactionId = new Guid("d042a040-8020-406c-91db-944e0efa5f74"),
+                            RowId = (short)22,
                             SiteId = 72100011L,
                             Title = "Вне фракций",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
@@ -857,6 +897,7 @@ namespace DumaLens.Context.Migrations
                             DateFrom = new DateOnly(2004, 1, 1),
                             DateTo = new DateOnly(2007, 12, 31),
                             FactionId = new Guid("f0e605dc-c9c2-4894-8c83-13bf0480e62d"),
+                            RowId = (short)23,
                             SiteId = 72100024L,
                             Title = "ЕР",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
@@ -869,6 +910,7 @@ namespace DumaLens.Context.Migrations
                             DateFrom = new DateOnly(2008, 1, 1),
                             DateTo = new DateOnly(2011, 12, 20),
                             FactionId = new Guid("f0e605dc-c9c2-4894-8c83-13bf0480e62d"),
+                            RowId = (short)24,
                             SiteId = 72100024L,
                             Title = "ЕР",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
@@ -881,6 +923,7 @@ namespace DumaLens.Context.Migrations
                             DateFrom = new DateOnly(2011, 12, 21),
                             DateTo = new DateOnly(2016, 10, 4),
                             FactionId = new Guid("f0e605dc-c9c2-4894-8c83-13bf0480e62d"),
+                            RowId = (short)25,
                             SiteId = 72100024L,
                             Title = "ЕР",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
@@ -893,6 +936,7 @@ namespace DumaLens.Context.Migrations
                             DateFrom = new DateOnly(2016, 10, 5),
                             DateTo = new DateOnly(2021, 10, 11),
                             FactionId = new Guid("f0e605dc-c9c2-4894-8c83-13bf0480e62d"),
+                            RowId = (short)26,
                             SiteId = 72100024L,
                             Title = "ЕР",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
@@ -905,6 +949,7 @@ namespace DumaLens.Context.Migrations
                             DateFrom = new DateOnly(2021, 10, 12),
                             DateTo = new DateOnly(2026, 9, 29),
                             FactionId = new Guid("f0e605dc-c9c2-4894-8c83-13bf0480e62d"),
+                            RowId = (short)27,
                             SiteId = 72100024L,
                             Title = "ЕР",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
@@ -917,6 +962,7 @@ namespace DumaLens.Context.Migrations
                             DateFrom = new DateOnly(2000, 1, 1),
                             DateTo = new DateOnly(2003, 12, 31),
                             FactionId = new Guid("f0e605dc-c9c2-4894-8c83-13bf0480e62d"),
+                            RowId = (short)28,
                             SiteId = 72100009L,
                             Title = "Е-ЕР",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
@@ -929,6 +975,7 @@ namespace DumaLens.Context.Migrations
                             DateFrom = new DateOnly(2000, 1, 1),
                             DateTo = new DateOnly(2003, 12, 31),
                             FactionId = new Guid("f0e605dc-c9c2-4894-8c83-13bf0480e62d"),
+                            RowId = (short)29,
                             SiteId = 72100010L,
                             Title = "О-ЕР",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
@@ -941,6 +988,7 @@ namespace DumaLens.Context.Migrations
                             DateFrom = new DateOnly(2004, 1, 1),
                             DateTo = new DateOnly(2007, 12, 31),
                             FactionId = new Guid("51cf331e-c029-4e16-9eec-affba832201e"),
+                            RowId = (short)30,
                             SiteId = 72100025L,
                             Title = "СР-Р",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
@@ -953,6 +1001,7 @@ namespace DumaLens.Context.Migrations
                             DateFrom = new DateOnly(2008, 1, 1),
                             DateTo = new DateOnly(2011, 12, 20),
                             FactionId = new Guid("51cf331e-c029-4e16-9eec-affba832201e"),
+                            RowId = (short)31,
                             SiteId = 72100027L,
                             Title = "СР",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
@@ -965,6 +1014,7 @@ namespace DumaLens.Context.Migrations
                             DateFrom = new DateOnly(2011, 12, 21),
                             DateTo = new DateOnly(2016, 10, 4),
                             FactionId = new Guid("51cf331e-c029-4e16-9eec-affba832201e"),
+                            RowId = (short)32,
                             SiteId = 72100027L,
                             Title = "СР",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
@@ -977,6 +1027,7 @@ namespace DumaLens.Context.Migrations
                             DateFrom = new DateOnly(2016, 10, 5),
                             DateTo = new DateOnly(2021, 10, 11),
                             FactionId = new Guid("51cf331e-c029-4e16-9eec-affba832201e"),
+                            RowId = (short)33,
                             SiteId = 72100027L,
                             Title = "СР",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
@@ -989,6 +1040,7 @@ namespace DumaLens.Context.Migrations
                             DateFrom = new DateOnly(2021, 10, 12),
                             DateTo = new DateOnly(2026, 9, 29),
                             FactionId = new Guid("51cf331e-c029-4e16-9eec-affba832201e"),
+                            RowId = (short)34,
                             SiteId = 72100029L,
                             Title = "СР",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
@@ -1001,6 +1053,7 @@ namespace DumaLens.Context.Migrations
                             DateFrom = new DateOnly(2021, 10, 12),
                             DateTo = new DateOnly(2026, 9, 29),
                             FactionId = new Guid("92d7276d-bea2-4751-a4c1-7f8c0ee118d4"),
+                            RowId = (short)35,
                             SiteId = 72100028L,
                             Title = "НЛ",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
@@ -1013,6 +1066,7 @@ namespace DumaLens.Context.Migrations
                             DateFrom = new DateOnly(1994, 1, 11),
                             DateTo = new DateOnly(1995, 12, 31),
                             FactionId = new Guid("e97addca-c253-4ff8-b3eb-2e6a41491221"),
+                            RowId = (short)36,
                             SiteId = 72100001L,
                             Title = "АПР",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
@@ -1025,6 +1079,7 @@ namespace DumaLens.Context.Migrations
                             DateFrom = new DateOnly(1994, 1, 11),
                             DateTo = new DateOnly(1995, 12, 31),
                             FactionId = new Guid("81264f05-daf0-4b91-9ba8-381f31404362"),
+                            RowId = (short)37,
                             SiteId = 72100002L,
                             Title = "ВР",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
@@ -1037,6 +1092,7 @@ namespace DumaLens.Context.Migrations
                             DateFrom = new DateOnly(1994, 1, 11),
                             DateTo = new DateOnly(1995, 12, 31),
                             FactionId = new Guid("c87fb255-1817-441e-a700-406fc2b6df61"),
+                            RowId = (short)38,
                             SiteId = 72100003L,
                             Title = "ДПР",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
@@ -1049,6 +1105,7 @@ namespace DumaLens.Context.Migrations
                             DateFrom = new DateOnly(1994, 1, 11),
                             DateTo = new DateOnly(1995, 12, 31),
                             FactionId = new Guid("ebb9199b-c439-4c62-bc71-72eab85f2019"),
+                            RowId = (short)39,
                             SiteId = 72100006L,
                             Title = "ПРЕС",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
@@ -1061,6 +1118,7 @@ namespace DumaLens.Context.Migrations
                             DateFrom = new DateOnly(1994, 1, 11),
                             DateTo = new DateOnly(1995, 12, 31),
                             FactionId = new Guid("df00511a-7978-4289-8fb8-da47a4ef80b1"),
+                            RowId = (short)40,
                             SiteId = 72100007L,
                             Title = "ЖР",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
@@ -1073,6 +1131,7 @@ namespace DumaLens.Context.Migrations
                             DateFrom = new DateOnly(1994, 1, 11),
                             DateTo = new DateOnly(1995, 12, 31),
                             FactionId = new Guid("68fe8a83-5d8b-4b26-8312-1957075bde79"),
+                            RowId = (short)41,
                             SiteId = 72100008L,
                             Title = "ЯБЛ",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
@@ -1085,6 +1144,7 @@ namespace DumaLens.Context.Migrations
                             DateFrom = new DateOnly(1996, 1, 1),
                             DateTo = new DateOnly(1999, 12, 31),
                             FactionId = new Guid("68fe8a83-5d8b-4b26-8312-1957075bde79"),
+                            RowId = (short)42,
                             SiteId = 72100008L,
                             Title = "ЯБЛ",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
@@ -1097,6 +1157,7 @@ namespace DumaLens.Context.Migrations
                             DateFrom = new DateOnly(2000, 1, 1),
                             DateTo = new DateOnly(2003, 12, 31),
                             FactionId = new Guid("68fe8a83-5d8b-4b26-8312-1957075bde79"),
+                            RowId = (short)43,
                             SiteId = 72100008L,
                             Title = "ЯБЛ",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
@@ -1109,6 +1170,7 @@ namespace DumaLens.Context.Migrations
                             DateFrom = new DateOnly(1994, 1, 11),
                             DateTo = new DateOnly(1995, 12, 31),
                             FactionId = new Guid("56dace41-92af-49d2-b6c7-622b13bd4fbc"),
+                            RowId = (short)44,
                             SiteId = 72100012L,
                             Title = "Стаб",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
@@ -1121,6 +1183,7 @@ namespace DumaLens.Context.Migrations
                             DateFrom = new DateOnly(1994, 1, 11),
                             DateTo = new DateOnly(1995, 12, 31),
                             FactionId = new Guid("6d678469-8ac9-42b5-bffb-615937bc14fb"),
+                            RowId = (short)45,
                             SiteId = 72100013L,
                             Title = "Росс",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
@@ -1133,6 +1196,7 @@ namespace DumaLens.Context.Migrations
                             DateFrom = new DateOnly(1994, 1, 11),
                             DateTo = new DateOnly(1995, 12, 31),
                             FactionId = new Guid("e768d23a-f9ee-4974-bd59-b667d0d49206"),
+                            RowId = (short)46,
                             SiteId = 72100014L,
                             Title = "Н-96",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
@@ -1145,6 +1209,7 @@ namespace DumaLens.Context.Migrations
                             DateFrom = new DateOnly(1994, 1, 11),
                             DateTo = new DateOnly(1995, 12, 31),
                             FactionId = new Guid("58c90289-b686-4eea-9479-c605be93b21a"),
+                            RowId = (short)47,
                             SiteId = 72100016L,
                             Title = "ЛДС",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
@@ -1157,6 +1222,7 @@ namespace DumaLens.Context.Migrations
                             DateFrom = new DateOnly(1996, 1, 1),
                             DateTo = new DateOnly(1999, 12, 31),
                             FactionId = new Guid("ce75e7e7-78cc-4280-89f8-833d0346f7ac"),
+                            RowId = (short)48,
                             SiteId = 72100017L,
                             Title = "НДР",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
@@ -1169,6 +1235,7 @@ namespace DumaLens.Context.Migrations
                             DateFrom = new DateOnly(1996, 1, 1),
                             DateTo = new DateOnly(1999, 12, 31),
                             FactionId = new Guid("845e78af-e7f2-4bdb-a014-f63ca4eebfd8"),
+                            RowId = (short)49,
                             SiteId = 72100018L,
                             Title = "Агр",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
@@ -1181,6 +1248,7 @@ namespace DumaLens.Context.Migrations
                             DateFrom = new DateOnly(1996, 1, 1),
                             DateTo = new DateOnly(1999, 12, 31),
                             FactionId = new Guid("2669c56a-cff0-4135-95a6-1b4e1696674b"),
+                            RowId = (short)50,
                             SiteId = 72100019L,
                             Title = "НРДВ",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
@@ -1193,6 +1261,7 @@ namespace DumaLens.Context.Migrations
                             DateFrom = new DateOnly(1996, 1, 1),
                             DateTo = new DateOnly(1999, 12, 31),
                             FactionId = new Guid("2a6e744b-7858-4e83-a3d8-7d1dc63a03ad"),
+                            RowId = (short)51,
                             SiteId = 72100020L,
                             Title = "РРег",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
@@ -1205,6 +1274,7 @@ namespace DumaLens.Context.Migrations
                             DateFrom = new DateOnly(2000, 1, 1),
                             DateTo = new DateOnly(2003, 12, 31),
                             FactionId = new Guid("904b8d63-2500-435c-87f1-3d5467989207"),
+                            RowId = (short)52,
                             SiteId = 72100015L,
                             Title = "СПС",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
@@ -1217,6 +1287,7 @@ namespace DumaLens.Context.Migrations
                             DateFrom = new DateOnly(2000, 1, 1),
                             DateTo = new DateOnly(2003, 12, 31),
                             FactionId = new Guid("315fdc5b-11ad-407e-a45d-1cb778bd822d"),
+                            RowId = (short)53,
                             SiteId = 72100021L,
                             Title = "АПГ",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
@@ -1229,6 +1300,7 @@ namespace DumaLens.Context.Migrations
                             DateFrom = new DateOnly(2000, 1, 1),
                             DateTo = new DateOnly(2003, 12, 31),
                             FactionId = new Guid("d77c1470-3098-4e22-8f7e-29866bb6a976"),
+                            RowId = (short)54,
                             SiteId = 72100022L,
                             Title = "НДеп",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
@@ -1241,6 +1313,7 @@ namespace DumaLens.Context.Migrations
                             DateFrom = new DateOnly(2000, 1, 1),
                             DateTo = new DateOnly(2003, 12, 31),
                             FactionId = new Guid("ceeb9b8d-12e6-469c-940f-fa04152e633e"),
+                            RowId = (short)55,
                             SiteId = 72100023L,
                             Title = "РРос",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
@@ -1253,6 +1326,7 @@ namespace DumaLens.Context.Migrations
                             DateFrom = new DateOnly(2004, 1, 1),
                             DateTo = new DateOnly(2007, 12, 31),
                             FactionId = new Guid("dd3b261e-94c8-4827-9855-2f0d345e0b64"),
+                            RowId = (short)56,
                             SiteId = 72100026L,
                             Title = "РНВС",
                             UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
@@ -1522,6 +1596,12 @@ namespace DumaLens.Context.Migrations
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)");
 
+                    b.Property<int>("RowId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("RowId"));
+
                     b.Property<long>("SiteId")
                         .HasColumnType("bigint");
 
@@ -1569,6 +1649,9 @@ namespace DumaLens.Context.Migrations
                     b.HasIndex(new[] { "ConvocationId" }, "IX_Vote_ConvocationId");
 
                     b.HasIndex(new[] { "ConvocationId", "VotedAt" }, "IX_Vote_ConvocationId_VotedAt");
+
+                    b.HasIndex(new[] { "RowId" }, "IX_Vote_RowId")
+                        .IsUnique();
 
                     b.HasIndex(new[] { "SiteId" }, "IX_Vote_SiteId")
                         .IsUnique()
@@ -1676,17 +1759,20 @@ namespace DumaLens.Context.Migrations
                     b.HasOne("DumaLens.Entities.Deputy", "Deputy")
                         .WithMany()
                         .HasForeignKey("DeputyId")
+                        .HasPrincipalKey("RowId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("DumaLens.Entities.FactionPeriod", "FactionPeriod")
                         .WithMany()
                         .HasForeignKey("FactionPeriodId")
+                        .HasPrincipalKey("RowId")
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("DumaLens.Entities.Vote", "Vote")
                         .WithMany()
                         .HasForeignKey("VoteId")
+                        .HasPrincipalKey("RowId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 

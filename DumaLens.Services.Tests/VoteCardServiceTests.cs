@@ -24,6 +24,8 @@ public sealed class VoteCardServiceTests : DumaLensContextInMemory
     private readonly VoteSearchSeed seed;
     private long nextPeriodSiteId = 900_000_000;
     private long nextDeputySiteId = 910_000_000;
+    private short nextPeriodRowId = 1000;
+    private int nextDeputyRowId = 100_000;
 
     /// <summary>
     /// Конструктор
@@ -132,6 +134,7 @@ public sealed class VoteCardServiceTests : DumaLensContextInMemory
     {
         var period = new FactionPeriod
         {
+            RowId = nextPeriodRowId++,
             FactionId = faction.Id,
             ConvocationId = convocation.Id,
             SiteId = nextPeriodSiteId++,
@@ -154,6 +157,7 @@ public sealed class VoteCardServiceTests : DumaLensContextInMemory
     {
         var deputy = TestEntityProvider.Shared.Create<Deputy>(x =>
         {
+            x.RowId = nextDeputyRowId++;
             x.SiteId = nextDeputySiteId++;
             x.FullName = sortName;
             x.SortName = sortName;
@@ -162,11 +166,12 @@ public sealed class VoteCardServiceTests : DumaLensContextInMemory
             x.DeletedAt = null;
         });
         Context.Add(deputy);
+        await UnitOfWork.SaveChangesAsync();
         Context.Add(new DeputyVote
         {
-            VoteId = vote.Id,
-            DeputyId = deputy.Id,
-            FactionPeriodId = period?.Id,
+            VoteId = vote.RowId,
+            DeputyId = deputy.RowId,
+            FactionPeriodId = period?.RowId,
             Result = result,
         });
         await UnitOfWork.SaveChangesAsync();

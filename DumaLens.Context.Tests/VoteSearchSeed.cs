@@ -17,6 +17,7 @@ public sealed class VoteSearchSeed
 {
     private readonly DumaLensContext context;
     private long siteId = 900_000_000;
+    private short nextPeriodRowId = 1000;
 
     /// <summary>
     /// Конструктор
@@ -93,6 +94,7 @@ public sealed class VoteSearchSeed
         }
         var period = new FactionPeriod
         {
+            RowId = nextPeriodRowId++,
             FactionId = faction.Id,
             ConvocationId = convocation.Id,
             SiteId = NextSiteId(),

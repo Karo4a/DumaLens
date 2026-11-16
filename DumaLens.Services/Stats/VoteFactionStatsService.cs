@@ -12,7 +12,7 @@ public class VoteFactionStatsService : IVoteFactionStatsService, IServiceAnchor
     public IReadOnlyCollection<VoteFactionStats> BuildStats(
         Guid voteId,
         IReadOnlyCollection<DeputyVote> deputyVotes,
-        IReadOnlyDictionary<Guid, Guid> factionIdByPeriodId)
+        IReadOnlyDictionary<short, FactionPeriodStatsKey> periodKeys)
     {
         var statsRows = new List<VoteFactionStats>();
         var groups = deputyVotes
@@ -30,8 +30,8 @@ public class VoteFactionStatsService : IVoteFactionStatsService, IServiceAnchor
             statsRows.Add(new VoteFactionStats
             {
                 VoteId = voteId,
-                FactionPeriodId = group.Key,
-                FactionId = factionIdByPeriodId[group.Key],
+                FactionPeriodId = periodKeys[group.Key].PeriodId,
+                FactionId = periodKeys[group.Key].FactionId,
                 AcceptCount = acceptCount,
                 DeclineCount = declineCount,
                 AbstainCount = abstainCount,

@@ -18,6 +18,11 @@ public class Vote : DbBaseEntity
     public long SiteId { get; set; }
 
     /// <summary>
+    /// Узкий суррогатный ключ для ссылок из DeputyVotes; генерируется базой (identity)
+    /// </summary>
+    public int RowId { get; set; }
+
+    /// <summary>
     /// Заголовок голосования
     /// </summary>
     public string Title { get; set; } = string.Empty;

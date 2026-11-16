@@ -75,6 +75,16 @@ public class FactionPeriodsDefault
         CreatePeriod("2da0ebe0-a68b-4a57-9506-a766548db824", "RNVS", 4, 72100026, "РНВС"),
     };
 
+    static FactionPeriodsDefault()
+    {
+        // Узкие ключи сидовых периодов фиксированы и детерминированы (порядок списка);
+        // identity базы продолжает нумерацию после них
+        for (var i = 0; i < Entities.Count; i++)
+        {
+            Entities[i].RowId = (short)(i + 1);
+        }
+    }
+
     /// <summary>
     /// Создаёт период фракции с датами соответствующего созыва
     /// </summary>

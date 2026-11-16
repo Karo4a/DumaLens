@@ -3,6 +3,7 @@ using DumaLens.Entities;
 using DumaLens.Entities.ValidationConstants;
 using DumaLens.Repositories.Contracts.Models;
 using DumaLens.Repositories.Contracts.WriteRepositories;
+using DumaLens.Services.Contracts;
 using Microsoft.EntityFrameworkCore;
 
 namespace DumaLens.Importer.Import;
@@ -151,7 +152,7 @@ public sealed class ReferenceCatalog
     /// <summary>
     /// Найти или создать депутата по идентификатору сайта; имя уточняется по самому свежему голосованию
     /// </summary>
-    public Guid EnsureDeputy(long siteId, string fullName, DateOnly votedAt)
+    public Deputy EnsureDeputy(long siteId, string fullName, DateOnly votedAt)
     {
         if (deputiesBySiteId.TryGetValue(siteId, out var deputy))
         {
@@ -167,7 +168,7 @@ public sealed class ReferenceCatalog
                 }
             }
 
-            return deputy.Id;
+            return deputy;
         }
 
         var created = new Deputy
@@ -180,20 +181,20 @@ public sealed class ReferenceCatalog
         deputiesBySiteId[siteId] = created;
         deputyLastVoteAt[siteId] = votedAt;
         deputyWriter.Add(created);
-        return created.Id;
+        return created;
     }
 
     /// <summary>
     /// Найти или создать фракционный период по ключу «идентификатор фракции на сайте + созыв»;
     /// каноническая фракция определяется по названию, границы периода уточняются по датам голосований
     /// </summary>
-    public Guid EnsureFactionPeriod(long factionSiteId, string factionTitle, ConvocationDbModel convocation, DateOnly date)
+    public FactionPeriod EnsureFactionPeriod(long factionSiteId, string factionTitle, ConvocationDbModel convocation, DateOnly date)
     {
         var key = (factionSiteId, convocation.Id);
         if (periodsByKey.TryGetValue(key, out var period))
         {
             ExtendPeriod(period, date);
-            return period.Id;
+            return period;
         }
 
         var faction = canonResolver.Resolve(factionTitle);
@@ -214,7 +215,7 @@ public sealed class ReferenceCatalog
         };
         periodsByKey[key] = period;
         factionPeriodWriter.Add(period);
-        return period.Id;
+        return period;
     }
 
     /// <summary>
@@ -260,12 +261,13 @@ public sealed class ReferenceCatalog
     }
 
     /// <summary>
-    /// Сопоставление идентификаторов периодов фракций и канонических фракций
-    /// для построения фракционных агрегатов (Э4)
+    /// Сопоставление узких ключей периодов фракций с идентификаторами периода и канонической фракции
+    /// для построения фракционных агрегатов (Э4); вызывать после SaveChanges пачки —
+    /// у новых периодов RowId присваивается базой
     /// </summary>
-    public IReadOnlyDictionary<Guid, Guid> GetFactionIdsByPeriodId()
+    public IReadOnlyDictionary<short, FactionPeriodStatsKey> GetPeriodStatsKeys()
     {
-        return periodsByKey.Values.ToDictionary(x => x.Id, x => x.FactionId);
+        return periodsByKey.Values.ToDictionary(x => x.RowId, x => new FactionPeriodStatsKey(x.Id, x.FactionId));
     }
 
     /// <summary>

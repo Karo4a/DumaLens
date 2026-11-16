@@ -53,7 +53,7 @@ public sealed class ArchiveVerifier
             .ToDictionaryAsync(x => x.ConvocationId, x => (long)x.Count, cancellationToken);
         var deputyVotesByConvocation = await (
                 from deputyVote in deputyVotes
-                join vote in votes on deputyVote.VoteId equals vote.Id
+                join vote in votes on deputyVote.VoteId equals vote.RowId
                 group deputyVote by vote.ConvocationId into g
                 select new { ConvocationId = g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.ConvocationId, x => (long)x.Count, cancellationToken);

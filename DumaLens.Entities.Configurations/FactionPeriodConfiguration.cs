@@ -17,6 +17,11 @@ public class FactionPeriodConfiguration : IEntityTypeConfiguration<FactionPeriod
         builder.ToTable("FactionPeriods");
         builder.HasKey(x => x.Id);
 
+        builder.Property(x => x.RowId)
+            .ValueGeneratedOnAdd();
+        builder.HasIndex(x => x.RowId, $"IX_{nameof(FactionPeriod)}_{nameof(FactionPeriod.RowId)}")
+            .IsUnique();
+
         builder.Property(x => x.Title)
             .HasMaxLength(CommonValidationConstants.TitleMaxLength)
             .IsRequired();

@@ -16,6 +16,11 @@ public class DeputyConfiguration : IEntityTypeConfiguration<Deputy>, IEntityConf
         builder.ToTable("Deputies");
         builder.HasKey(x => x.Id);
 
+        builder.Property(x => x.RowId)
+            .ValueGeneratedOnAdd();
+        builder.HasIndex(x => x.RowId, $"IX_{nameof(Deputy)}_{nameof(Deputy.RowId)}")
+            .IsUnique();
+
         builder.Property(x => x.FullName)
             .HasMaxLength(DeputyValidationConstants.FullNameMaxLength)
             .IsRequired();

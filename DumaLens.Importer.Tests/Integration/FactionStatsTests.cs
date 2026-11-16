@@ -157,12 +157,12 @@ public sealed class FactionStatsTests
             await using (var context = database.CreateContext())
             {
                 var vote = await context.Set<Vote>().SingleAsync(x => x.SiteId == 126282);
-                var periodId = await context.Set<FactionPeriod>()
+                var periodRowId = await context.Set<FactionPeriod>()
                     .Where(x => x.SiteId == 72100024 && x.ConvocationId == vote.ConvocationId)
-                    .Select(x => x.Id)
+                    .Select(x => x.RowId)
                     .SingleAsync();
                 var deputyVote = await context.Set<DeputyVote>()
-                    .FirstAsync(x => x.VoteId == vote.Id && x.FactionPeriodId == periodId && x.Result == VoteResult.Accept);
+                    .FirstAsync(x => x.VoteId == vote.RowId && x.FactionPeriodId == periodRowId && x.Result == VoteResult.Accept);
                 deputyVote.Result = VoteResult.Decline;
                 await context.SaveChangesAsync();
             }
@@ -238,7 +238,7 @@ public sealed class FactionStatsTests
             await using (var context = database.CreateContext())
             {
                 var vote = await context.Set<Vote>().SingleAsync(x => x.SiteId == 87506);
-                await context.Set<DeputyVote>().Where(x => x.VoteId == vote.Id).ExecuteDeleteAsync();
+                await context.Set<DeputyVote>().Where(x => x.VoteId == vote.RowId).ExecuteDeleteAsync();
             }
 
             var summary = await RunRecalc(database.ConnectionString);

@@ -1,6 +1,7 @@
 using DumaLens.Context.Tests;
 using DumaLens.Entities;
 using DumaLens.Entities.Contracts.Enums;
+using DumaLens.Services.Contracts;
 using DumaLens.Services.Stats;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
@@ -44,12 +45,15 @@ public sealed class VoteFactionStatsPersistenceTests : DumaLensContextInMemory
 
         var deputyVotes = new List<DeputyVote>
         {
-            new() { VoteId = vote.Id, DeputyId = deputies[0].Id, FactionPeriodId = period.Id, Result = VoteResult.Accept },
-            new() { VoteId = vote.Id, DeputyId = deputies[1].Id, FactionPeriodId = period.Id, Result = VoteResult.Accept },
-            new() { VoteId = vote.Id, DeputyId = deputies[2].Id, FactionPeriodId = period.Id, Result = VoteResult.None },
+            new() { VoteId = vote.RowId, DeputyId = deputies[0].RowId, FactionPeriodId = period.RowId, Result = VoteResult.Accept },
+            new() { VoteId = vote.RowId, DeputyId = deputies[1].RowId, FactionPeriodId = period.RowId, Result = VoteResult.Accept },
+            new() { VoteId = vote.RowId, DeputyId = deputies[2].RowId, FactionPeriodId = period.RowId, Result = VoteResult.None },
         };
         var service = new VoteFactionStatsService();
-        var stats = service.BuildStats(vote.Id, deputyVotes, new Dictionary<Guid, Guid> { [period.Id] = period.FactionId });
+        var stats = service.BuildStats(vote.Id, deputyVotes, new Dictionary<short, FactionPeriodStatsKey>
+        {
+            [period.RowId] = new FactionPeriodStatsKey(period.Id, period.FactionId),
+        });
         Context.Set<VoteFactionStats>().AddRange(stats);
         await Context.SaveChangesAsync();
 

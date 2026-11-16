@@ -189,8 +189,8 @@ public class ColumnConstraintTests
         await context.SaveChangesAsync();
         var deputyVote = TestEntityProvider.Shared.Create<DeputyVote>(x =>
         {
-            x.VoteId = vote.Id;
-            x.DeputyId = deputy.Id;
+            x.VoteId = vote.RowId;
+            x.DeputyId = deputy.RowId;
             x.FactionPeriodId = null;
             x.Result = VoteResult.Abstain;
             x.Vote = null!;
@@ -204,7 +204,7 @@ public class ColumnConstraintTests
 
         // Assert
         var stored = await context.Set<DeputyVote>().AsNoTracking()
-            .SingleAsync(x => x.VoteId == vote.Id && x.DeputyId == deputy.Id);
+            .SingleAsync(x => x.VoteId == vote.RowId && x.DeputyId == deputy.RowId);
         stored.Result.Should().Be(VoteResult.Abstain);
         var columnType = await context.Database
             .SqlQueryRaw<string>("SELECT data_type AS \"Value\" FROM information_schema.columns WHERE table_name = 'DeputyVotes' AND column_name = 'Result'")

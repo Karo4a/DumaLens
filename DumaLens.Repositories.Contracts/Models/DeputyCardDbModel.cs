@@ -11,6 +11,11 @@ public class DeputyCardDbModel
     public Guid Id { get; set; }
 
     /// <summary>
+    /// Узкий ключ депутата для выборки индивидуальных голосов (Deputies.RowId)
+    /// </summary>
+    public int RowId { get; set; }
+
+    /// <summary>
     /// Идентификатор депутата на сайте Госдумы
     /// </summary>
     public long SiteId { get; set; }

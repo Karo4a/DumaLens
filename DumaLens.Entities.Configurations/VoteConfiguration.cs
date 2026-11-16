@@ -21,6 +21,11 @@ public class VoteConfiguration : IEntityTypeConfiguration<Vote>, IEntityConfigur
         builder.ToTable("Votes");
         builder.HasKey(x => x.Id);
 
+        builder.Property(x => x.RowId)
+            .ValueGeneratedOnAdd();
+        builder.HasIndex(x => x.RowId, $"IX_{nameof(Vote)}_{nameof(Vote.RowId)}")
+            .IsUnique();
+
         builder.Property(x => x.Title)
             .IsRequired();
         builder.Property<NpgsqlTsVector>("TitleSearch")

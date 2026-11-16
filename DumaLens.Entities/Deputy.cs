@@ -16,6 +16,11 @@ public class Deputy : DbBaseEntity
     public long SiteId { get; set; }
 
     /// <summary>
+    /// Узкий суррогатный ключ для ссылок из DeputyVotes; генерируется базой (identity)
+    /// </summary>
+    public int RowId { get; set; }
+
+    /// <summary>
     /// Полное имя (ФИО)
     /// </summary>
     public string FullName { get; set; } = string.Empty;

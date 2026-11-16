@@ -26,6 +26,12 @@ public class FactionPeriod : DbBaseEntity
     public long SiteId { get; set; }
 
     /// <summary>
+    /// Узкий суррогатный ключ для ссылок из DeputyVotes; генерируется базой (identity).
+    /// В сиде фиксирован (1..N), новые периоды получают значения после сидовых
+    /// </summary>
+    public short RowId { get; set; }
+
+    /// <summary>
     /// Название фракции в этом созыве («ЕР», «СР-Р»)
     /// </summary>
     public string Title { get; set; } = string.Empty;

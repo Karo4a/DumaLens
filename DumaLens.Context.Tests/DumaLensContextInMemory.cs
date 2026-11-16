@@ -80,6 +80,7 @@ public abstract class DumaLensContextInMemory : IAsyncDisposable
         var convocation = await PrepareConvocation(save: !save);
         var period = TestEntityProvider.Shared.Create<FactionPeriod>(x =>
         {
+            x.RowId = (short)Random.Shared.Next(1000, 32000);
             x.FactionId = faction.Id;
             x.ConvocationId = convocation.Id;
             x.SiteId = Random.Shared.NextInt64(100000, 99999999);
@@ -104,6 +105,7 @@ public abstract class DumaLensContextInMemory : IAsyncDisposable
     {
         var deputy = TestEntityProvider.Shared.Create<Deputy>(x =>
         {
+            x.RowId = Random.Shared.Next(100000, int.MaxValue);
             x.SiteId = Random.Shared.NextInt64(100000, 99999999);
             x.DeletedAt = deletedAt;
         });

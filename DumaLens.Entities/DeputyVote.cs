@@ -7,23 +7,25 @@ namespace DumaLens.Entities;
 /// </summary>
 /// <remarks>
 /// Потоковая таблица без аудита и soft-delete (ADR-2): составной ключ (VoteId, DeputyId), данные иммутабельны.
+/// Внешние ключи ссылаются на узкие целочисленные RowId справочников (ADR-14);
+/// GUID справочников остаются первичными ключами.
 /// </remarks>
 public class DeputyVote
 {
     /// <summary>
-    /// Идентификатор голосования
+    /// Узкий ключ голосования (Votes.RowId)
     /// </summary>
-    public Guid VoteId { get; set; }
+    public int VoteId { get; set; }
 
     /// <summary>
-    /// Идентификатор депутата
+    /// Узкий ключ депутата (Deputies.RowId)
     /// </summary>
-    public Guid DeputyId { get; set; }
+    public int DeputyId { get; set; }
 
     /// <summary>
-    /// Идентификатор фракционного периода депутата на момент голосования (null, если не установлен)
+    /// Узкий ключ фракционного периода депутата на момент голосования (FactionPeriods.RowId; null, если не установлен)
     /// </summary>
-    public Guid? FactionPeriodId { get; set; }
+    public short? FactionPeriodId { get; set; }
 
     /// <summary>
     /// Результат голоса

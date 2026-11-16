@@ -249,9 +249,9 @@ public sealed class ApiSeed
     {
         var deputyVote = new DeputyVote
         {
-            VoteId = vote.Id,
-            DeputyId = deputy.Id,
-            FactionPeriodId = period?.Id,
+            VoteId = vote.RowId,
+            DeputyId = deputy.RowId,
+            FactionPeriodId = period?.RowId,
             Result = result,
         };
         context.Add(deputyVote);

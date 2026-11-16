@@ -16,9 +16,9 @@ public interface IVoteFactionStatsService
     /// </summary>
     /// <param name="voteId">Идентификатор голосования</param>
     /// <param name="deputyVotes">Индивидуальные голоса депутатов этого голосования</param>
-    /// <param name="factionIdByPeriodId">Сопоставление идентификаторов периодов фракций и канонических фракций</param>
+    /// <param name="periodKeys">Сопоставление узких ключей периодов (FactionPeriods.RowId) с идентификаторами периода и канонической фракции</param>
     IReadOnlyCollection<VoteFactionStats> BuildStats(
         Guid voteId,
         IReadOnlyCollection<DeputyVote> deputyVotes,
-        IReadOnlyDictionary<Guid, Guid> factionIdByPeriodId);
+        IReadOnlyDictionary<short, FactionPeriodStatsKey> periodKeys);
 }

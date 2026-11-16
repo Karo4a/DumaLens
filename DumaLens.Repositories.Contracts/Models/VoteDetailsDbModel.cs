@@ -8,6 +8,11 @@ namespace DumaLens.Repositories.Contracts.Models;
 public class VoteDetailsDbModel : VoteSearchDbModel
 {
     /// <summary>
+    /// Узкий ключ голосования для выборки индивидуальных голосов (Votes.RowId)
+    /// </summary>
+    public int RowId { get; set; }
+
+    /// <summary>
     /// Исходная формулировка стадии с сайта (null для архива)
     /// </summary>
     public string? StageRaw { get; set; }

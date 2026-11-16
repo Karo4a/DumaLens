@@ -25,8 +25,8 @@ public sealed class StatsRecalculator
             "AcceptPctMembers", "DeclinePctMembers", "AbstainPctMembers", "NonePctMembers",
             "AcceptPctVoted", "DeclinePctVoted", "AbstainPctVoted")
         SELECT
-            dv."VoteId",
-            dv."FactionPeriodId",
+            v."Id",
+            fp."Id",
             fp."FactionId",
             COUNT(*) FILTER (WHERE dv."Result" = {{(int)VoteResult.Accept}}),
             COUNT(*) FILTER (WHERE dv."Result" = {{(int)VoteResult.Decline}}),
@@ -42,10 +42,10 @@ public sealed class StatsRecalculator
             ROUND(100.0 * COUNT(*) FILTER (WHERE dv."Result" = {{(int)VoteResult.Decline}}) / NULLIF(COUNT(*) FILTER (WHERE dv."Result" <> {{(int)VoteResult.None}}), 0), {{CommonValidationConstants.PercentScale}}),
             ROUND(100.0 * COUNT(*) FILTER (WHERE dv."Result" = {{(int)VoteResult.Abstain}}) / NULLIF(COUNT(*) FILTER (WHERE dv."Result" <> {{(int)VoteResult.None}}), 0), {{CommonValidationConstants.PercentScale}})
         FROM "DeputyVotes" dv
-        JOIN "FactionPeriods" fp ON fp."Id" = dv."FactionPeriodId" AND fp."DeletedAt" IS NULL
-        JOIN "Votes" v ON v."Id" = dv."VoteId" AND v."DeletedAt" IS NULL
-        WHERE dv."FactionPeriodId" IS NOT NULL
-        GROUP BY dv."VoteId", dv."FactionPeriodId", fp."FactionId"
+        JOIN "FactionPeriods" fp ON fp."RowId" = dv."FactionPeriodId"
+        JOIN "Votes" v ON v."RowId" = dv."VoteId"
+        WHERE dv."FactionPeriodId" IS NOT NULL AND fp."DeletedAt" IS NULL AND v."DeletedAt" IS NULL
+        GROUP BY v."Id", fp."Id", fp."FactionId"
         """;
 
     private readonly DumaLensContext context;

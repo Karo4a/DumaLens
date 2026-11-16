@@ -123,6 +123,7 @@ public class VoteReadRepository : IVoteReadRepository, IRepositoryAnchor
             .Select(x => new VoteDetailsDbModel
             {
                 Id = x.Id,
+                RowId = x.RowId,
                 SiteId = x.SiteId,
                 Title = x.Title,
                 VotedAt = x.VotedAt,
@@ -147,7 +148,7 @@ public class VoteReadRepository : IVoteReadRepository, IRepositoryAnchor
         }
         await AttachFactionStats(new List<VoteSearchDbModel> { vote }, cancellationToken);
         vote.DeputyVotes = await reader.Read<DeputyVote>()
-            .Where(x => x.VoteId == vote.Id)
+            .Where(x => x.VoteId == vote.RowId)
             .Select(x => new DeputyVoteDbModel
             {
                 DeputySiteId = x.Deputy.SiteId,

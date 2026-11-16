@@ -31,6 +31,7 @@ public class DeputyReadRepository : IDeputyReadRepository, IRepositoryAnchor
             .Select(x => new DeputyCardDbModel
             {
                 Id = x.Id,
+                RowId = x.RowId,
                 SiteId = x.SiteId,
                 FullName = x.FullName,
                 SortName = x.SortName,
@@ -59,10 +60,10 @@ public class DeputyReadRepository : IDeputyReadRepository, IRepositoryAnchor
         var counters = await reader.Read<Vote>()
             .NotDeletedAt()
             .Join(reader.Read<DeputyVote>(),
-                vote => vote.Id,
+                vote => vote.RowId,
                 deputyVote => deputyVote.VoteId,
                 (vote, deputyVote) => deputyVote)
-            .Where(x => x.DeputyId == deputy.Id)
+            .Where(x => x.DeputyId == deputy.RowId)
             .GroupBy(x => x.Result)
             .Select(g => new { Result = g.Key, Count = g.Count() })
             .ToListAsync(cancellationToken);
