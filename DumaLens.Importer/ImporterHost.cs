@@ -13,6 +13,7 @@ using DumaLens.Repositories;
 using DumaLens.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using System.Net;
 
 namespace DumaLens.Importer;
 
@@ -50,7 +51,13 @@ public static class ImporterHost
         services.AddScoped<ArchiveVerifier>();
         services.AddSingleton(provider =>
         {
-            var client = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
+            // Сайт отдаёт gzip (~17 КБ вместо ~156 КБ на карточку): без запроса сжатия
+            // HttpClient получает полный текст — замеренный узкий место скорости обхода
+            var handler = new HttpClientHandler
+            {
+                AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate | DecompressionMethods.Brotli,
+            };
+            var client = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(30) };
             client.DefaultRequestHeaders.UserAgent.ParseAdd("DumaLens/1.0 (educational research crawler)");
             return client;
         });

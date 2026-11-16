@@ -48,6 +48,34 @@ public class VotePageParserTests
     }
 
     /// <summary>
+    /// Карточка 135715 в новой разметке сайта (16.11.2026): deputiesData присваивается без var,
+    /// JSON с дополнительными полями letter/name — разбор не зависит от шаблона объявления
+    /// </summary>
+    [Fact]
+    public void Parse_NewTemplateCard135715_ExtractsAllFields()
+    {
+        var vote = parser.Parse(FixtureFiles.Html("vote_new_template.html"), 135715);
+
+        vote.SiteId.Should().Be(135715);
+        vote.Title.Should().Be("(за основу) О проекте порядка работы Государственной Думы на 27 июля 2026 года");
+        vote.VotedAt.Should().Be(new DateTimeOffset(2026, 7, 27, 10, 10, 17, TimeSpan.FromHours(3)));
+        vote.ConvocationSiteCode.Should().Be("AAAAAAA8");
+        vote.HasResults.Should().BeTrue();
+        vote.Issues.Should().BeEmpty();
+
+        vote.DeputyVotes.Should().HaveCount(433);
+        var first = vote.DeputyVotes[0];
+        first.DeputySiteId.Should().Be(99113478);
+        first.FullName.Should().Be("Абакаров Хизри Магомедович");
+        first.FactionSiteId.Should().Be(72100024);
+        first.FactionTitle.Should().Be("ЕР");
+        first.Result.Should().Be(VoteResult.None);
+        first.ResultRaw.Should().Be("absent");
+        vote.DeputyVotes.Should().OnlyContain(v => v.Result != null);
+        vote.DeputyVotes.Should().OnlyContain(v => v.DeputySiteId > 0);
+    }
+
+    /// <summary>
     /// Пустое голосование 17470: deputiesData = [], HasResults = false, без замечаний
     /// </summary>
     [Fact]
