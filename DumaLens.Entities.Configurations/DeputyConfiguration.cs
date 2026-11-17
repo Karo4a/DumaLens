@@ -18,8 +18,8 @@ public class DeputyConfiguration : IEntityTypeConfiguration<Deputy>, IEntityConf
 
         builder.Property(x => x.RowId)
             .ValueGeneratedOnAdd();
-        builder.HasIndex(x => x.RowId, $"IX_{nameof(Deputy)}_{nameof(Deputy.RowId)}")
-            .IsUnique();
+        // Уникальность RowId обеспечивает альтернативный ключ (HasPrincipalKey в DeputyVoteConfiguration);
+        // отдельный уникальный индекс не создаём — FK опирается на индекс AK
 
         builder.Property(x => x.FullName)
             .HasMaxLength(DeputyValidationConstants.FullNameMaxLength)

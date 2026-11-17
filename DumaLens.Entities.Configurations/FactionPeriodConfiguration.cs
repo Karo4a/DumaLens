@@ -19,8 +19,8 @@ public class FactionPeriodConfiguration : IEntityTypeConfiguration<FactionPeriod
 
         builder.Property(x => x.RowId)
             .ValueGeneratedOnAdd();
-        builder.HasIndex(x => x.RowId, $"IX_{nameof(FactionPeriod)}_{nameof(FactionPeriod.RowId)}")
-            .IsUnique();
+        // Уникальность RowId обеспечивает альтернативный ключ (HasPrincipalKey в DeputyVoteConfiguration);
+        // отдельный уникальный индекс не создаём — FK опирается на индекс AK
 
         builder.Property(x => x.Title)
             .HasMaxLength(CommonValidationConstants.TitleMaxLength)
