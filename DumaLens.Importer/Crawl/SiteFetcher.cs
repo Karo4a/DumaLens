@@ -8,7 +8,7 @@ namespace DumaLens.Importer.Crawl;
 /// </summary>
 /// <remarks>
 /// HTTP 404 — страница отсутствует (без повторов); 5xx и сетевые сбои — до <see cref="RetryCount"/>
-/// повторов с экспоненциальной задержкой (DelayMs × 2, 4, 8). Устойчивый 500 у карточки
+/// повторов с экспоненциальной задержкой (DelayMs × 2, 4, 8, не менее 500 мс). Устойчивый 500 у карточки
 /// означает «id отсутствует на сайте» (особенность vote.duma.gov.ru). Отмена токена
 /// пробрасывается наружу, а не глотается как сетевой сбой.
 /// </remarks>
@@ -18,6 +18,9 @@ public sealed class SiteFetcher
     /// Число повторов после первой неудачной попытки
     /// </summary>
     public const int RetryCount = 3;
+
+    // Нижняя граница задержки повтора: при DelayMs = 0 повторы не должны идти мгновенно
+    private const int MinBackoffMs = 500;
 
     private readonly HttpClient httpClient;
     private readonly ImportLog log;
@@ -82,7 +85,7 @@ public sealed class SiteFetcher
 
     private async Task Backoff(string url, string reason, int attempt, int delayMs, CancellationToken cancellationToken)
     {
-        var backoffMs = delayMs * (1 << (attempt + 1));
+        var backoffMs = Math.Max(delayMs * (1 << (attempt + 1)), MinBackoffMs);
         log.Info($"Сбой запроса {url} ({reason}) — повтор {attempt + 1}/{RetryCount} через {backoffMs} мс");
         if (backoffMs > 0)
         {

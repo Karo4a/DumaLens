@@ -100,6 +100,23 @@ public sealed class SiteFetcherTests
         handler.Calls.Should().Be(2);
     }
 
+    /// <summary>
+    /// Отмена пользовательского токена пробрасывается наружу, а не глотается как сетевой сбой
+    /// </summary>
+    [Fact]
+    public async Task Fetch_UserCancellation_Propagates()
+    {
+        var handler = new StubHttpHandler(StubHttpHandler.Response(HttpStatusCode.OK, "ok"));
+        var fetcher = CreateFetcher(handler);
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        var act = () => fetcher.FetchAsync("http://localhost/vote/1", delayMs: 0, cts.Token);
+
+        await act.Should().ThrowAsync<OperationCanceledException>();
+        handler.Calls.Should().BeLessThanOrEqualTo(1, "повторы не выполняются: отмена токена пробрасывается, а не глотается как сетевой сбой");
+    }
+
     private static SiteFetcher CreateFetcher(StubHttpHandler handler)
     {
         var httpClient = new HttpClient(handler);

@@ -6,9 +6,14 @@
 public sealed class CrawlOptions
 {
     /// <summary>
+    /// Базовый URL сайта голосований по умолчанию
+    /// </summary>
+    public const string DefaultBaseUrl = "https://vote.duma.gov.ru";
+
+    /// <summary>
     /// Базовый URL сайта голосований
     /// </summary>
-    public string BaseUrl { get; set; } = "https://vote.duma.gov.ru";
+    public string BaseUrl { get; set; } = DefaultBaseUrl;
 
     /// <summary>
     /// Номер созыва 1–9; 0 — все созывы по возрастанию номера

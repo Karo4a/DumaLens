@@ -75,6 +75,7 @@ public sealed class ArchiveVerifier
                 where vote.BillId != null
                 join bill in reader.Read<Bill>().NotDeletedAt() on vote.BillId equals bill.Id
                 select bill.Number)
+            .Distinct()
             .ToListAsync(cancellationToken);
 
         var quarantine = await SumQuarantine(convocations, cancellationToken);

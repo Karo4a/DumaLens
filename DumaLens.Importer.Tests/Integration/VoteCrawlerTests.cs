@@ -86,6 +86,7 @@ public sealed class VoteCrawlerTests
             quarantine[0].Reason.Should().Contain("DeputyCountOutOfRange");
 
             site.Requests.Should().NotContain("/vote/126282");
+            site.Requests.Should().Contain("/robots.txt", "robots.txt реально запрашивается (фикстура отдаёт пути с точкой в сегменте)");
             site.Requests.Should().Contain("/vote/888888");
             site.Requests.Should().Contain("/?convocation=AAAAAAA8&page=1");
             site.Requests.Should().Contain("/?convocation=AAAAAAA8&page=2");
@@ -209,6 +210,179 @@ public sealed class VoteCrawlerTests
         }
     }
 
+    /// <summary>
+    /// Непустая карточка нового голосования: новые депутаты и периоды фракций создаются, RowId
+    /// материализуется после SaveChanges, индивидуальные голоса и агрегаты пишутся COPY в транзакции пачки
+    /// </summary>
+    [SkippableFact]
+    public async Task Crawl_FullCard_ImportsDeputyVotesAndStats()
+    {
+        var database = new DatabaseFixture();
+        await database.InitializeAsync();
+        Skip.If(database.SkipReason != null, database.SkipReason);
+        await using var site = new LocalSiteFixture();
+        try
+        {
+            site.AddRoute("/robots.txt", "User-agent: *\nDisallow:\n");
+            site.AddRoute("/?convocation=AAAAAAA8&page=1", BuildListingPage(
+                activePage: 1,
+                totalCount: 1,
+                new ListingItem(888889, "green", "За: 109 чел (25.2%)")));
+            site.AddRoute("/?convocation=AAAAAAA8&page=2", BuildListingPage(activePage: 2, totalCount: 1));
+            site.AddRoute("/vote/888889", BuildCard(
+                "(третье чтение) О проекте федерального закона № 500092-8 «О полном голосовании»",
+                BuildFullDeputies()));
+            await site.StartAsync();
+
+            var summary = await RunCrawl(database.ConnectionString, site.BaseUrl);
+
+            summary.NewVotes.Should().Be(1);
+            summary.DeputyVotesImported.Should().Be(433);
+            summary.FactionStatsImported.Should().Be(2);
+            summary.Quarantined.Should().Be(0);
+            summary.MissingIds.Should().Be(0);
+
+            await using var context = database.CreateContext();
+            var vote = await context.Set<Vote>().AsNoTracking().SingleAsync();
+            vote.SiteId.Should().Be(888889);
+            vote.Source.Should().Be(VoteSource.Site);
+            vote.HasResults.Should().BeTrue();
+            vote.Outcome.Should().Be(VoteOutcome.Accepted);
+            vote.AcceptPercentSite.Should().Be(25.2m);
+            vote.AcceptCountTotal.Should().Be(109);
+            vote.DeclineCountTotal.Should().Be(108);
+            vote.AbstainCountTotal.Should().Be(108);
+            vote.NoneCountTotal.Should().Be(108);
+            vote.RowId.Should().BeGreaterThan(0);
+
+            var deputyVotes = await context.Set<DeputyVote>().AsNoTracking().ToListAsync();
+            deputyVotes.Should().HaveCount(433);
+            deputyVotes.Should().OnlyContain(x => x.VoteId == vote.RowId && x.DeputyId > 0 && x.FactionPeriodId > 0);
+            deputyVotes.Count(x => x.Result == VoteResult.Accept).Should().Be(109);
+            deputyVotes.Count(x => x.Result == VoteResult.Decline).Should().Be(108);
+            deputyVotes.Count(x => x.Result == VoteResult.Abstain).Should().Be(108);
+            deputyVotes.Count(x => x.Result == VoteResult.None).Should().Be(108);
+
+            (await context.Set<Deputy>().AsNoTracking().CountAsync()).Should().Be(433, "все депутаты карточки новые");
+            var newPeriods = await context.Set<FactionPeriod>().AsNoTracking()
+                .Where(x => x.SiteId == 990001 || x.SiteId == 990002)
+                .ToListAsync();
+            newPeriods.Should().HaveCount(2);
+            newPeriods.Should().OnlyContain(x => x.RowId > 56, "identity периодов продолжается после сидов 1–56 (setval миграции)");
+
+            var stats = await context.Set<VoteFactionStats>().AsNoTracking().ToListAsync();
+            stats.Should().HaveCount(2);
+            stats.Should().OnlyContain(x => x.VoteId == vote.Id);
+
+            var periodA = newPeriods.Single(x => x.SiteId == 990001);
+            var statsA = stats.Single(x => x.FactionPeriodId == periodA.Id);
+            statsA.FactionId.Should().Be(periodA.FactionId);
+            statsA.MemberCount.Should().Be(200);
+            statsA.VotedCount.Should().Be(150);
+            statsA.AcceptCount.Should().Be(50);
+            statsA.DeclineCount.Should().Be(50);
+            statsA.AbstainCount.Should().Be(50);
+            statsA.NoneCount.Should().Be(50);
+            statsA.AcceptPctMembers.Should().Be(25.00m);
+            statsA.AcceptPctVoted.Should().Be(33.33m);
+
+            var periodB = newPeriods.Single(x => x.SiteId == 990002);
+            var statsB = stats.Single(x => x.FactionPeriodId == periodB.Id);
+            statsB.MemberCount.Should().Be(233);
+            statsB.VotedCount.Should().Be(175);
+            statsB.AcceptCount.Should().Be(59);
+            statsB.AcceptPctMembers.Should().Be(25.32m);
+            statsB.AcceptPctVoted.Should().Be(33.71m);
+
+            (await context.Set<DeputyFactionMembership>().AsNoTracking().CountAsync()).Should().Be(433);
+            (await context.Set<ImportQuarantine>().AsNoTracking().CountAsync()).Should().Be(0);
+        }
+        finally
+        {
+            await database.DisposeAsync();
+        }
+    }
+
+    /// <summary>
+    /// Карантин семантических аномалий: код созыва карточки не соответствует листингу
+    /// и повторяющиеся депутаты в карточке
+    /// </summary>
+    [SkippableFact]
+    public async Task Crawl_ConvocationMismatchAndDuplicateDeputies_Quarantined()
+    {
+        var database = new DatabaseFixture();
+        await database.InitializeAsync();
+        Skip.If(database.SkipReason != null, database.SkipReason);
+        await using var site = new LocalSiteFixture();
+        try
+        {
+            site.AddRoute("/robots.txt", "User-agent: *\nDisallow:\n");
+            site.AddRoute("/?convocation=AAAAAAA8&page=1", BuildListingPage(
+                activePage: 1,
+                totalCount: 2,
+                new ListingItem(777778, "red", null),
+                new ListingItem(777779, "red", null)));
+            site.AddRoute("/?convocation=AAAAAAA8&page=2", BuildListingPage(activePage: 2, totalCount: 2));
+            site.AddRoute("/vote/777778", BuildCard(
+                "(третье чтение) О проекте федерального закона № 100003-8 «О чужом созыве»",
+                BuildFiveDeputies(),
+                convocationCode: "AAAAAAA7"));
+            site.AddRoute("/vote/777779", BuildCard(
+                "(третье чтение) О проекте федерального закона № 100004-8 «О повторяющихся депутатах»",
+                BuildFiveDeputies(duplicateFirst: true)));
+            await site.StartAsync();
+
+            var summary = await RunCrawl(database.ConnectionString, site.BaseUrl);
+
+            summary.Quarantined.Should().Be(2);
+            summary.NewVotes.Should().Be(0);
+            summary.DeputyVotesImported.Should().Be(0);
+
+            await using var context = database.CreateContext();
+            (await context.Set<Vote>().AsNoTracking().CountAsync()).Should().Be(0);
+            var quarantine = await context.Set<ImportQuarantine>().AsNoTracking().ToListAsync();
+            quarantine.Should().HaveCount(2);
+
+            var mismatch = quarantine.Single(x => x.SiteId == 777778);
+            mismatch.Reason.Should().Contain("не соответствует листингу");
+            mismatch.SourceFile.Should().BeNull();
+
+            var duplicates = quarantine.Single(x => x.SiteId == 777779);
+            duplicates.Reason.Should().Contain("Повторяющиеся депутаты в карточке: 1");
+        }
+        finally
+        {
+            await database.DisposeAsync();
+        }
+    }
+
+    /// <summary>
+    /// robots.txt с запретом обхода: кроулер прерывается до загрузки листингов
+    /// </summary>
+    [SkippableFact]
+    public async Task Crawl_RobotsDisallow_Throws()
+    {
+        var database = new DatabaseFixture();
+        await database.InitializeAsync();
+        Skip.If(database.SkipReason != null, database.SkipReason);
+        await using var site = new LocalSiteFixture();
+        try
+        {
+            site.AddRoute("/robots.txt", "User-agent: *\nDisallow: /\n");
+            await site.StartAsync();
+
+            var act = () => RunCrawl(database.ConnectionString, site.BaseUrl);
+
+            await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*robots.txt*");
+            site.Requests.Should().Contain("/robots.txt", "robots.txt должен реально запрашиваться и разбираться, а не 404 → разрешено всё");
+            site.Requests.Should().NotContain(r => r.StartsWith("/?convocation"), "листинги не загружаются при запрете robots");
+        }
+        finally
+        {
+            await database.DisposeAsync();
+        }
+    }
+
     private static async Task<CrawlSummary> RunCrawl(string connectionString, string baseUrl, int maxCards = 0, int parallel = 1)
     {
         await using var provider = ImporterHost.BuildServiceProvider(connectionString, null);
@@ -317,32 +491,47 @@ public sealed class VoteCrawlerTests
         return builder.ToString();
     }
 
-    private static string BuildCard(string title, string deputiesDataJs)
+    private static string BuildCard(string title, string deputiesDataJs, string convocationCode = "AAAAAAA8")
     {
         return $"<html><body><h1>{title}</h1>"
             + "<div class=\"date-p\"><span>15.05.2024 12:00:00</span></div>"
-            + "<a href=\"/?convocation=AAAAAAA8\">VIII созыв</a>"
+            + $"<a href=\"/?convocation={convocationCode}\">Созыв</a>"
             + $"<script>{deputiesDataJs}</script>"
             + "</body></html>";
     }
 
-    private static string BuildFiveDeputies()
+    private static string BuildFiveDeputies(bool duplicateFirst = false)
     {
-        var builder = new StringBuilder("var deputiesData = [");
         string[] names = ["Иванов Иван Иванович", "Петров Пётр Петрович", "Сидоров Сидор Сидорович", "Кузнецов Кузьма Кузьмич", "Смирнов Сергей Сергеевич"];
         string[] results = ["for", "against", "abstain", "absent", "for"];
+        var entries = new List<string>();
         for (var i = 0; i < names.Length; i++)
         {
-            if (i > 0)
-            {
-                builder.Append(',');
-            }
-
-            builder.Append($"{{\"sortName\":\"{names[i]}\",\"url\":\"/deputy?deputy={i + 1}\",\"result\":\"{results[i]}\",\"factionCode\":\"{i + 1}\",\"faction\":\"Фракция {i + 1}\"}}");
+            entries.Add($"{{\"sortName\":\"{names[i]}\",\"url\":\"/deputy?deputy={i + 1}\",\"result\":\"{results[i]}\",\"factionCode\":\"{i + 1}\",\"faction\":\"Фракция {i + 1}\"}}");
         }
 
-        builder.Append("];");
-        return builder.ToString();
+        if (duplicateFirst)
+        {
+            entries.Add(entries[0]);
+        }
+
+        return "var deputiesData = [" + string.Join(",", entries) + "];";
+    }
+
+    // 433 депутата (диапазон валидатора 430–460): 200 в новой фракции 990001 и 233 в новой фракции 990002;
+    // результаты циклом for/against/abstain/absent: «за» 109, «против»/«воздержался»/«не голосовал» по 108
+    private static string BuildFullDeputies()
+    {
+        string[] results = ["for", "against", "abstain", "absent"];
+        var entries = new List<string>();
+        for (var i = 1; i <= 433; i++)
+        {
+            var factionCode = i <= 200 ? "990001" : "990002";
+            var factionTitle = i <= 200 ? "Тестовая фракция А" : "Тестовая фракция Б";
+            entries.Add($"{{\"sortName\":\"Депутат Тестовый {i:D3}\",\"url\":\"/deputy?deputy={900000 + i}\",\"result\":\"{results[(i - 1) % 4]}\",\"factionCode\":\"{factionCode}\",\"faction\":\"{factionTitle}\"}}");
+        }
+
+        return "var deputiesData = [" + string.Join(",", entries) + "];";
     }
 
     private sealed record ListingItem(long SiteId, string OutcomeClass, string? Counts);

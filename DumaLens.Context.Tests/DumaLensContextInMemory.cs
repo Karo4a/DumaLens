@@ -20,6 +20,10 @@ public abstract class DumaLensContextInMemory : IAsyncDisposable
     /// <inheritdoc cref="IUnitOfWork"/>
     protected IUnitOfWork UnitOfWork => Context;
 
+    // Счётчики вместо Random: InMemory проверяет альтернативные ключи, случайные RowId могут столкнуться
+    private short nextPeriodRowId = 1000;
+    private int nextDeputyRowId = 100000;
+
     /// <summary>
     /// Конструктор
     /// </summary>
@@ -80,7 +84,7 @@ public abstract class DumaLensContextInMemory : IAsyncDisposable
         var convocation = await PrepareConvocation(save: !save);
         var period = TestEntityProvider.Shared.Create<FactionPeriod>(x =>
         {
-            x.RowId = (short)Random.Shared.Next(1000, 32000);
+            x.RowId = nextPeriodRowId++;
             x.FactionId = faction.Id;
             x.ConvocationId = convocation.Id;
             x.SiteId = Random.Shared.NextInt64(100000, 99999999);
@@ -105,7 +109,7 @@ public abstract class DumaLensContextInMemory : IAsyncDisposable
     {
         var deputy = TestEntityProvider.Shared.Create<Deputy>(x =>
         {
-            x.RowId = Random.Shared.Next(100000, int.MaxValue);
+            x.RowId = nextDeputyRowId++;
             x.SiteId = Random.Shared.NextInt64(100000, 99999999);
             x.DeletedAt = deletedAt;
         });

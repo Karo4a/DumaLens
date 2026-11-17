@@ -66,7 +66,11 @@ public sealed partial class VoteListingParser : IVoteListingParser
             var href = anchor.GetAttribute("href") ?? string.Empty;
             foreach (Match match in PageNumberRegex().Matches(href))
             {
-                pageNumbers.Add(int.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture));
+                // Переполнение int (битая ссылка пагинации) — номер пропускается, обход не падает
+                if (int.TryParse(match.Groups[1].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var pageNumber))
+                {
+                    pageNumbers.Add(pageNumber);
+                }
             }
         }
 
@@ -78,12 +82,6 @@ public sealed partial class VoteListingParser : IVoteListingParser
             {
                 listing.TotalCount = totalCount;
             }
-        }
-
-        var activePageText = document.QuerySelector("span.page-nave-act")?.TextContent?.Trim();
-        if (int.TryParse(activePageText, NumberStyles.Integer, CultureInfo.InvariantCulture, out var currentPage))
-        {
-            listing.CurrentPageNumber = currentPage;
         }
 
         listing.Items = items;
@@ -100,7 +98,9 @@ public sealed partial class VoteListingParser : IVoteListingParser
         var anchor = element.QuerySelector("div.item-left a[href]");
         var href = anchor?.GetAttribute("href") ?? string.Empty;
         var idMatch = VoteIdRegex().Match(href);
-        if (!idMatch.Success)
+        // Переполнение long (id вне диапазона) — элемент пропускается с замечанием, обход не падает
+        if (!idMatch.Success
+            || !long.TryParse(idMatch.Groups[1].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var siteId))
         {
             issues.Add(new ParseIssue
             {
@@ -120,7 +120,7 @@ public sealed partial class VoteListingParser : IVoteListingParser
 
         var item = new ParsedListingItem
         {
-            SiteId = long.Parse(idMatch.Groups[1].Value, CultureInfo.InvariantCulture),
+            SiteId = siteId,
             Title = HtmlText.Clean(anchor?.TextContent),
             VotedAt = new DateTimeOffset(date.ToDateTime(time), MoscowOffset)
         };
@@ -158,7 +158,10 @@ public sealed partial class VoteListingParser : IVoteListingParser
     private static int? ParseInt(Regex regex, string text)
     {
         var match = regex.Match(text);
-        return match.Success ? int.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture) : null;
+        // Переполнение int (битый счётчик) — значение null, разбор не падает
+        return match.Success && int.TryParse(match.Groups[1].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value)
+            ? value
+            : null;
     }
 
     [GeneratedRegex(@"/vote/(\d+)")]

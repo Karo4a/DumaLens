@@ -26,7 +26,6 @@ public class VoteListingParserTests
         listing.PageNumbers.Should().BeEquivalentTo([1, 2, 3, 4, 5, 6, 7, 8, 833, 834, 835]);
         listing.LastPageNumber.Should().Be(835);
         listing.TotalCount.Should().Be(16689);
-        listing.CurrentPageNumber.Should().Be(1);
 
         var first = listing.Items[0];
         first.SiteId.Should().Be(135715);
@@ -50,7 +49,6 @@ public class VoteListingParserTests
         listing.Items.Should().HaveCount(20);
         listing.LastPageNumber.Should().Be(22);
         listing.TotalCount.Should().Be(437);
-        listing.CurrentPageNumber.Should().Be(1);
 
         var first = listing.Items[0];
         first.SiteId.Should().Be(136413);
@@ -93,7 +91,6 @@ public class VoteListingParserTests
         listing.Items.Should().HaveCount(9);
         listing.LastPageNumber.Should().Be(835);
         listing.TotalCount.Should().Be(16689);
-        listing.CurrentPageNumber.Should().Be(835);
         listing.Items.Select(i => i.SiteId).Should().Equal(Enumerable.Range(115589, 9).Select(n => (long)n));
         listing.Items.Should().OnlyContain(i => i.VotedAt.Date == new DateTime(2021, 10, 12));
     }
@@ -115,7 +112,6 @@ public class VoteListingParserTests
         listing.PageNumbers.Should().BeEmpty();
         listing.LastPageNumber.Should().Be(1);
         listing.TotalCount.Should().Be(4);
-        listing.CurrentPageNumber.Should().BeNull();
         listing.Issues.Should().BeEmpty();
     }
 
@@ -130,7 +126,6 @@ public class VoteListingParserTests
         listing.Items.Should().BeEmpty();
         listing.LastPageNumber.Should().Be(1);
         listing.TotalCount.Should().BeNull();
-        listing.CurrentPageNumber.Should().BeNull();
         listing.Issues.Should().BeEmpty();
     }
 
@@ -168,5 +163,60 @@ public class VoteListingParserTests
 
         listing.Issues.Should().ContainSingle(i => i.Code == ParseIssueCode.InvalidVoteId);
         listing.Items.Should().BeEmpty();
+    }
+
+    /// <summary>
+    /// Идентификатор голосования вне диапазона long: элемент пропускается с замечанием InvalidVoteId, обход не падает
+    /// </summary>
+    [Fact]
+    public void Parse_OverflowVoteId_SkipsItemWithIssue()
+    {
+        const string html = "<html><body>"
+            + "<div class=\"date-head\"><div>13.03.2024</div></div>"
+            + "<div class=\"item\"><div><div class=\"item-left\">"
+            + "<div class=\"time\">10:00:00</div><a href=\"/vote/99999999999999999999999999\">Тест</a>"
+            + "</div></div></div></body></html>";
+
+        var listing = parser.Parse(html);
+
+        listing.Issues.Should().ContainSingle(i => i.Code == ParseIssueCode.InvalidVoteId);
+        listing.Items.Should().BeEmpty();
+    }
+
+    /// <summary>
+    /// Номер страницы пагинации вне диапазона int: ссылка игнорируется, остальные номера разбираются
+    /// </summary>
+    [Fact]
+    public void Parse_OverflowPageNumber_IgnoresLink()
+    {
+        const string html = "<html><body>"
+            + "<a href=\"/?convocation=AAAAAAA8&amp;page=99999999999999999999\">Дальше</a>"
+            + "<a href=\"/?convocation=AAAAAAA8&amp;page=2\">2</a>"
+            + "</body></html>";
+
+        var listing = parser.Parse(html);
+
+        listing.PageNumbers.Should().Equal(2);
+        listing.LastPageNumber.Should().Be(2);
+    }
+
+    /// <summary>
+    /// Счётчик «За» вне диапазона int: значение null, итог и остальные поля разбираются
+    /// </summary>
+    [Fact]
+    public void Parse_OverflowAcceptCount_NullCount()
+    {
+        const string html = "<html><body>"
+            + "<div class=\"date-head\"><div>13.03.2024</div></div>"
+            + "<div class=\"item\"><div><div class=\"item-left\">"
+            + "<div class=\"time\">10:00:00</div><a href=\"/vote/126282\">Тест</a></div>"
+            + "<div class=\"item-right\"><div class=\"green\">принят</div>За: 99999999999999999999 чел</div>"
+            + "</div></div></body></html>";
+
+        var listing = parser.Parse(html);
+
+        var item = listing.Items.Should().ContainSingle().Subject;
+        item.AcceptCount.Should().BeNull();
+        item.Outcome.Should().Be(VoteOutcome.Accepted);
     }
 }

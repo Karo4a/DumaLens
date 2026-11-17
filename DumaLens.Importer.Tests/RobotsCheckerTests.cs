@@ -74,6 +74,18 @@ public sealed class RobotsCheckerTests
         checker.IsAllowed("/vote/1").Should().BeTrue();
     }
 
+    /// <summary>
+    /// BOM в начале robots.txt не ломает разбор первой группы User-agent
+    /// </summary>
+    [Fact]
+    public async Task Load_BomPrefix_ParsesFirstGroup()
+    {
+        var checker = await LoadRobots("\uFEFFUser-agent: *\nDisallow: /vote/\n");
+
+        checker.IsAllowed("/vote/1").Should().BeFalse();
+        checker.IsAllowed("/").Should().BeTrue();
+    }
+
     private static async Task<RobotsChecker> LoadRobots(string robotsText)
     {
         var handler = new StubHttpHandler(StubHttpHandler.Response(HttpStatusCode.OK, robotsText));

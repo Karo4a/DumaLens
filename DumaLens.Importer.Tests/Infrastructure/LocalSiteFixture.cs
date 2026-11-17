@@ -60,7 +60,9 @@ public sealed class LocalSiteFixture : IAsyncDisposable
         builder.Logging.ClearProviders();
         builder.WebHost.UseUrls($"http://127.0.0.1:{port}");
         app = builder.Build();
-        app.MapFallback(async context =>
+        // Явный catch-all без ограничения nonfile: дефолтный MapFallback использует {*path:nonfile}
+        // и пропускает пути с точкой в последнем сегменте (robots.txt не долетал до обработчика)
+        app.MapFallback("{*path}", async context =>
         {
             var key = context.Request.Path + context.Request.QueryString;
             Requests.Enqueue(key);

@@ -26,11 +26,6 @@ public sealed class ParsedListing
     public int? TotalCount { get; set; }
 
     /// <summary>
-    /// Номер текущей страницы из активного элемента пагинации (null, если не найден)
-    /// </summary>
-    public int? CurrentPageNumber { get; set; }
-
-    /// <summary>
     /// Номер последней страницы пагинации (1, если ссылок нет)
     /// </summary>
     public int LastPageNumber => PageNumbers.Count == 0 ? 1 : PageNumbers[^1];

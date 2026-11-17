@@ -53,6 +53,8 @@ public sealed class RobotsChecker
             return;
         }
 
+        // BOM в начале файла не убирается Trim() (не whitespace) и ломает разбор первой группы User-agent
+        text = text.TrimStart('\uFEFF');
         var appliesToUs = false;
         foreach (var rawLine in text.Split('\n'))
         {

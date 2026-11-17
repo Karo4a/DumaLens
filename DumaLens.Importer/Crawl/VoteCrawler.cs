@@ -151,6 +151,8 @@ public sealed class VoteCrawler
                 }
 
                 summary.ListingPagesFetched++;
+                // Пустые элементы проверяем ДО lastPage: вне диапазона сайт отдаёт пустую страницу
+                // с окном пагинации вокруг запрошенного номера (LastPageNumber раздут до запрошенной страницы)
                 if (listing.Items.Count == 0)
                 {
                     break;
@@ -186,7 +188,8 @@ public sealed class VoteCrawler
             }
 
             summary.ListingItemsSeen += itemsSeen;
-            if (siteTotalCount.HasValue && siteTotalCount.Value != itemsSeen)
+            // Сравниваем только при полном обходе с первой страницы: при --from-page > 1 неполный охват штатен
+            if (options.FromPage == 1 && siteTotalCount.HasValue && siteTotalCount.Value != itemsSeen)
             {
                 log.Info($"Созыв {convocation.Number}: счётчик листинга {siteTotalCount.Value} расходится с собранным {itemsSeen} (сайт мог измениться во время обхода)");
             }
@@ -341,7 +344,29 @@ public sealed class VoteCrawler
                 throttle.Release();
             }
         }).ToArray();
-        await Task.WhenAll(tasks);
+        try
+        {
+            await Task.WhenAll(tasks);
+        }
+        catch
+        {
+            // WhenAll бросает первое исключение, не дожидаясь остальных: дожидаем sibling-таски,
+            // чтобы их исключения не остались unobserved, а Release() не попал в disposed семафор
+            foreach (var task in tasks)
+            {
+                try
+                {
+                    await task;
+                }
+                catch
+                {
+                    // Исключение sibling-таска наблюдено; наружу пробрасывается первое исключение WhenAll
+                }
+            }
+
+            throw;
+        }
+
         return results.ToList();
     }
 

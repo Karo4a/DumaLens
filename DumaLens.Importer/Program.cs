@@ -205,7 +205,7 @@ internal class Program
         var crawlBatchOption = new Option<int>("--batch", () => 100, "Размер пачки карточек в одной транзакции");
         var maxCardsOption = new Option<int>("--max-cards", () => 0, "Ограничить число обрабатываемых карточек (0 — все); для пробных прогонов");
         var parallelOption = new Option<int>("--parallel", () => 1, "Число одновременных запросов карточек (1 — последовательно; рекомендуется <= 8)");
-        var baseUrlOption = new Option<string>("--base-url", () => "https://vote.duma.gov.ru", "Базовый URL сайта (для локальных фикстур)");
+        var baseUrlOption = new Option<string>("--base-url", () => CrawlOptions.DefaultBaseUrl, "Базовый URL сайта (для локальных фикстур)");
         var crawlLogOption = new Option<FileInfo?>("--log", "Файл журнала обхода (дополнительно к stdout)");
 
         var crawlCommand = new Command("crawl", "Обход живого сайта: листинги созывов, добор итога/процента, загрузка новых карточек (Э7)");
@@ -226,7 +226,7 @@ internal class Program
             var batch = invocationContext.ParseResult.GetValueForOption(crawlBatchOption);
             var maxCards = invocationContext.ParseResult.GetValueForOption(maxCardsOption);
             var parallel = invocationContext.ParseResult.GetValueForOption(parallelOption);
-            var baseUrl = invocationContext.ParseResult.GetValueForOption(baseUrlOption) ?? "https://vote.duma.gov.ru";
+            var baseUrl = invocationContext.ParseResult.GetValueForOption(baseUrlOption) ?? CrawlOptions.DefaultBaseUrl;
             var logFile = invocationContext.ParseResult.GetValueForOption(crawlLogOption);
             var connection = invocationContext.ParseResult.GetValueForOption(connectionOption);
 
