@@ -5,6 +5,8 @@ rem ============================================================
 rem  DumaLens — переход на int-ключи DeputyVotes (ADR-14)
 rem  Миграция IntKeysDeputyVotes пересоздаёт DeputyVotes с узкими
 rem  ключами; данные восстанавливаются полным реимпортом архива.
+rem  Реимпорт восстанавливает ТОЛЬКО архивные голосования: site-
+rem  голосования (Э7) при откате требуют отдельной очистки (Docs/08).
 rem  Админ-права не нужны; dotnet-ef/psql не нужны — миграцию
 rem  применяет сам импортёр (MigrateAsync).
 rem
@@ -32,6 +34,16 @@ set "CONN=%ConnectionStrings__DefaultConnection%"
 set "DBPART=!CONN:*Database=!"
 for /f "delims=;" %%a in ("!DBPART!") do set "TARGETDB=%%a"
 set "TARGETDB=!TARGETDB:~1!"
+rem Sanity: без Database= в строке подключения парсинг даёт мусор (Npgsql defaults to username)
+if "!TARGETDB!"=="" (
+    echo [ОШИБКА] Не удалось разобрать имя базы: укажите Database= в строке подключения явно.
+    exit /b 1
+)
+echo(!TARGETDB!| findstr /c:"=" >nul
+if not errorlevel 1 (
+    echo [ОШИБКА] Не удалось разобрать имя базы: укажите Database= в строке подключения явно.
+    exit /b 1
+)
 echo ============================================================
 echo  Цель перехода: база !TARGETDB!
 echo  DeputyVotes будет пересоздана (все индивидуальные голоса
