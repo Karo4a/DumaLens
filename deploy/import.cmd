@@ -2,12 +2,12 @@
 chcp 65001 >nul
 setlocal
 rem ============================================================
-rem  DumaLens — разовый импорт архива (разворачивание в колледже)
+rem  DumaLens — разовый импорт архива (разворачивание без прав администратора)
 rem  Админ-права не нужны: база создаётся и мигрируется автоматически.
 rem
 rem  1) set ConnectionStrings__DefaultConnection=Host=localhost;Port=5432;Database=dumalens;Username=postgres;Password=<пароль>
-rem  2) deploy\college-import.cmd [аргументы import-archive]
-rem     напр.: deploy\college-import.cmd --workers 2 --batch 300
+rem  2) deploy\import.cmd [аргументы import-archive]
+rem     напр.: deploy\import.cmd --workers 2 --batch 300
 rem ============================================================
 cd /d "%~dp0.."
 
@@ -31,7 +31,7 @@ if not exist "%IMPORTER%" (
 )
 
 echo [2/3] Импорт архива: bulk-режим ^(при нехватке прав — автоматический переход в обычный^)...
-dotnet "%IMPORTER%" import-archive --zip vote-master.zip --bulk --log import-college.log %*
+dotnet "%IMPORTER%" import-archive --zip vote-master.zip --bulk --log import.log %*
 if errorlevel 1 (
     echo [ОШИБКА] Импорт завершился с ошибкой. Если данные загружены, но схема не восстановлена:
     echo   dotnet "%IMPORTER%" restore-schema
@@ -44,4 +44,4 @@ if errorlevel 1 (
     echo [ОШИБКА] Контрольные суммы не сошлись — см. вывод выше.
     exit /b 1
 )
-echo Готово. Демонстрация: deploy\college-demo.cmd
+echo Готово. Демонстрация: deploy\demo.cmd

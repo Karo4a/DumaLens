@@ -3,7 +3,7 @@ chcp 65001 >nul
 setlocal
 rem ============================================================
 rem  DumaLens — запуск демонстрации: Api (Swagger) + Web
-rem  Требуется заданная ConnectionStrings__DefaultConnection (см. college-import.cmd).
+rem  Требуется заданная ConnectionStrings__DefaultConnection (см. import.cmd).
 rem  Остановка: закрыть окна DumaLens.Api и DumaLens.Web.
 rem ============================================================
 cd /d "%~dp0.."

@@ -16,7 +16,7 @@ rem  3) deploy\transition-int-keys.cmd [--yes]
 rem
 rem  Шаги: recalc-stats (миграция + очистка агрегатов) ->
 rem        import-archive --bulk -> verify.
-rem  Откат: тег pre-int-keys (код до перехода), Docs/08-deployment-college.md.
+rem  Откат: тег pre-int-keys (код до перехода), Docs/08-deployment.md.
 rem ============================================================
 cd /d "%~dp0.."
 
@@ -48,7 +48,7 @@ echo ============================================================
 echo  Цель перехода: база !TARGETDB!
 echo  DeputyVotes будет пересоздана (все индивидуальные голоса
 echo  удалены и восстановлены реимпортом), VoteFactionStats очищена.
-echo  Операция занимает ~6-15 минут; откат — по Docs/08-deployment-college.md.
+echo  Операция занимает ~6-15 минут; откат — по Docs/08-deployment.md.
 echo ============================================================
 if /i not "%~1"=="--yes" (
     set /p CONFIRM="Продолжить? Введите yes: "
