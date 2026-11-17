@@ -12,7 +12,7 @@ rem  применяет сам импортёр (MigrateAsync).
 rem
 rem  1) set ConnectionStrings__DefaultConnection=Host=localhost;Port=5432;Database=dumalens;Username=postgres;Password=***
 rem  2) Остановить Api и Web (отключение FK-триггеров действует на все сеансы).
-rem  3) deploy\transition-int-keys.cmd [--yes]
+rem  3) Deploy\transition-int-keys.cmd [--yes]
 rem
 rem  Шаги: recalc-stats (миграция + очистка агрегатов) ->
 rem        import-archive --bulk -> verify.

@@ -44,7 +44,7 @@
 
 ## Порты
 
-- Api переведён **5000/5001 → 5200/5201** (launchSettings.json, ClientOptions.nswag, deploy/demo.cmd,
+- Api переведён **5000/5001 → 5200/5201** (launchSettings.json, ClientOptions.nswag, Deploy/demo.cmd,
   Docs/08): порт 5000 занят сторонним сервисом на IPv4 — процесс не трогали. Web 5100/5101 без изменений.
 - Генерация клиента каноническим конфигом (`http://localhost:5200/swagger/v1/swagger.json`) проверена
   на запущенном Api: exit 0, сгенерированный файл побайтово идентичен прежней генерации.

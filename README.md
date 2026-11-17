@@ -21,7 +21,7 @@ MVP в разработке. Выполнены этапы **Э0–Э7**: кар
 
 - .NET 8 SDK (`global.json` пинит 8.0.x)
 - PostgreSQL 16+ (проверено на 17), учётная запись с правами создания баз
-- Windows или Linux; скрипты `deploy/` — Windows (cmd), CLI импортёра кроссплатформенный
+- Windows или Linux; скрипты `Deploy/` — Windows (cmd), CLI импортёра кроссплатформенный
 
 ## Данные
 
@@ -56,7 +56,7 @@ export ConnectionStrings__DefaultConnection="Host=localhost;Port=5432;Database=d
 
 ```bat
 :: Windows — сборка при необходимости → импорт --bulk → сверка с паспортом
-deploy\import.cmd
+Deploy\import.cmd
 ```
 
 ```bash
@@ -74,7 +74,7 @@ dotnet run --project DumaLens.Api    # http://localhost:5200/swagger
 dotnet run --project DumaLens.Web    # http://localhost:5100 (заглушка до Э8)
 ```
 
-Windows-демо одним скриптом: `deploy\demo.cmd`. Пополнение с живого сайта:
+Windows-демо одним скриптом: `Deploy\demo.cmd`. Пополнение с живого сайта:
 
 ```bash
 dotnet run --project DumaLens.Importer -c Release -- crawl --convocation 0 --parallel 8 --delay-ms 500

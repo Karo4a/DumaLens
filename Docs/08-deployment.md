@@ -57,13 +57,13 @@
    Если сервер на другом хосте/порту — поправить `Host`/`Port`.
 3. Запустить импорт:
    ```bat
-   deploy\import.cmd
+   Deploy\import.cmd
    ```
    Скрипт: сборка (если нужна) → `import-archive --bulk` → `verify`.
    База `dumalens` создаётся и мигрируется автоматически, отдельный psql/dotnet-ef не нужен.
 4. Запустить демонстрацию:
    ```bat
-   deploy\demo.cmd
+   Deploy\demo.cmd
    ```
    Api: `http://localhost:5200/swagger` (среда Development включается скриптом),
    Web: `http://localhost:5100` (заглушка до реализации Э8).
@@ -79,7 +79,7 @@
 
 ```bat
 set ConnectionStrings__DefaultConnection=Host=localhost;Port=5432;Database=dumalens;Username=postgres;Password=***
-deploy\transition-int-keys.cmd
+Deploy\transition-int-keys.cmd
 ```
 
 Скрипт спрашивает подтверждение (показывает имя целевой базы; `--yes` — без вопроса),
@@ -105,7 +105,7 @@ deploy\transition-int-keys.cmd
 ## Тюнинг под слабую машину (всё конфигурируемо, права не нужны)
 
 - **Воркеры разбора**: по умолчанию `ядра − 2` (на 4–6 ядрах это 2–4 — уже консервативно).
-  Явно: `deploy\import.cmd --workers 2`.
+  Явно: `Deploy\import.cmd --workers 2`.
 - **Размер пачки**: по умолчанию 500 голосований на транзакцию. При нехватке ОЗУ:
   `--batch 200`–`300`.
 - **GC**: Server GC включён в csproj импортёра; 16 ГБ достаточно. Если память зажата
@@ -145,6 +145,6 @@ deploy\transition-int-keys.cmd
 ```
 DumaLens\                 — репозиторий (исходники + при желании бинарники Release)
   vote-master.zip         — архив голосований (~851 МБ)
-  deploy\import.cmd       — сборка (если нужна) + импорт --bulk + verify
-  deploy\demo.cmd         — запуск Api (Swagger) + Web
+  Deploy\import.cmd       — сборка (если нужна) + импорт --bulk + verify
+  Deploy\demo.cmd         — запуск Api (Swagger) + Web
 ```

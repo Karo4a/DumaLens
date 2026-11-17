@@ -6,8 +6,8 @@ rem  DumaLens — разовый импорт архива (разворачив
 rem  Админ-права не нужны: база создаётся и мигрируется автоматически.
 rem
 rem  1) set ConnectionStrings__DefaultConnection=Host=localhost;Port=5432;Database=dumalens;Username=postgres;Password=<пароль>
-rem  2) deploy\import.cmd [аргументы import-archive]
-rem     напр.: deploy\import.cmd --workers 2 --batch 300
+rem  2) Deploy\import.cmd [аргументы import-archive]
+rem     напр.: Deploy\import.cmd --workers 2 --batch 300
 rem ============================================================
 cd /d "%~dp0.."
 
@@ -44,4 +44,4 @@ if errorlevel 1 (
     echo [ОШИБКА] Контрольные суммы не сошлись — см. вывод выше.
     exit /b 1
 )
-echo Готово. Демонстрация: deploy\demo.cmd
+echo Готово. Демонстрация: Deploy\demo.cmd
