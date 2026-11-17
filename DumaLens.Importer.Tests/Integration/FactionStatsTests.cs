@@ -1,3 +1,4 @@
+using DumaLens.Context;
 using DumaLens.Entities;
 using DumaLens.Entities.Contracts.Enums;
 using DumaLens.Importer.Import;
@@ -107,6 +108,33 @@ public sealed class FactionStatsTests
         finally
         {
             File.Delete(zipPath);
+            await database.DisposeAsync();
+        }
+    }
+
+    /// <summary>
+    /// recalc-stats поднимает таймаут команд до 30 минут: пересчёт по десяткам миллионов строк
+    /// не укладывается в дефолтные 30 с Npgsql (на полной базе падал TimeoutException, откат транзакции)
+    /// </summary>
+    [SkippableFact]
+    public async Task Recalc_RaisesCommandTimeout_ForFullScaleRebuild()
+    {
+        var database = new DatabaseFixture();
+        await database.InitializeAsync();
+        Skip.If(database.SkipReason != null, database.SkipReason);
+        try
+        {
+            await using var provider = ImporterHost.BuildServiceProvider(database.ConnectionString, null);
+            await using var scope = provider.CreateAsyncScope();
+            var recalculator = scope.ServiceProvider.GetRequiredService<StatsRecalculator>();
+
+            await recalculator.Recalc(CancellationToken.None);
+
+            var context = scope.ServiceProvider.GetRequiredService<DumaLensContext>();
+            context.Database.GetCommandTimeout().Should().Be(1800);
+        }
+        finally
+        {
             await database.DisposeAsync();
         }
     }

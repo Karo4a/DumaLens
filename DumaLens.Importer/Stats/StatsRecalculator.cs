@@ -71,6 +71,8 @@ public sealed class StatsRecalculator
     {
         var startedAt = dateTimeProvider.UtcNow();
         await context.Database.MigrateAsync(cancellationToken);
+        // Пересчёт по десяткам миллионов строк длится минуты — дефолтные 30 с Npgsql не годятся
+        context.Database.SetCommandTimeout(TimeSpan.FromMinutes(30));
 
         await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
         // DELETE вместо TRUNCATE: ACCESS EXCLUSIVE блокировал бы чтение агрегатов на весь пересчёт (НФТ-11)
