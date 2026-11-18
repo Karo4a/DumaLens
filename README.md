@@ -6,7 +6,7 @@
 
 ## Статус
 
-MVP в разработке. Выполнены этапы **Э0–Э7**: каркас решения, модель данных и справочники, парсеры и нормализация, потоковый импорт архива, фракционные агрегаты, полнотекстовый поиск, REST API с карточками, кроулер живого сайта. Впереди: Blazor-интерфейс (Э8), аутентификация и роли (Э9), производительность и развёртывание (Э10). Web-хост пока заглушка.
+MVP в разработке. Выполнены этапы **Э0–Э8**: каркас решения, модель данных и справочники, парсеры и нормализация, потоковый импорт архива, фракционные агрегаты, полнотекстовый поиск, REST API с карточками, кроулер живого сайта, Blazor-интерфейс (поиск с конструктором фракционных условий, карточки голосования/законопроекта/фракции/депутата, светлая и тёмная темы). Впереди: аутентификация и роли (Э9), производительность и развёртывание (Э10).
 
 План этапов, архитектурные решения (ADR) и отчёты приёмки — в [Docs/](Docs/README.md).
 
@@ -71,7 +71,7 @@ dotnet run --project DumaLens.Importer -c Release -- verify
 
 ```bash
 dotnet run --project DumaLens.Api    # http://localhost:5200/swagger
-dotnet run --project DumaLens.Web    # http://localhost:5100 (заглушка до Э8)
+dotnet run --project DumaLens.Web    # http://localhost:5100 (Blazor-интерфейс)
 ```
 
 Windows-демо одним скриптом: `Deploy\demo.cmd`. Пополнение с живого сайта:
@@ -92,6 +92,7 @@ dotnet run --project DumaLens.Importer -c Release -- crawl --convocation 0 --par
 | `verify` | Сверка контрольных сумм базы с паспортом архива | `--report` |
 | `crawl` | Обход живого сайта: листинги, добор итогов, новые карточки | `--convocation N` (0 — все), `--from-page N`, `--delay-ms N` (1000), `--parallel N` (1), `--batch N` (100), `--max-cards N`, `--base-url`, `--log` |
 | `recalc-stats` | Полный пересчёт фракционных агрегатов из индивидуальных голосов (ремонтный инструмент) | — |
+| `normalize-titles` | Очистка ведущих служебных маркеров «*»/«**» в заголовках голосований (идемпотентно) | — |
 | `restore-schema` | Довосстановление индексов/FK после аварийного bulk-импорта без реимпорта | — |
 
 ## API
@@ -120,7 +121,7 @@ dotnet test DumaLens.sln
 
 ## Структура решения
 
-28 проектов, строгие слои без обратных ссылок: `Api → Services → Repositories → Context → Entities`; `Web → Api.Client → Api.Models`; `Importer → Services / Parsing / Context`. Контракты вынесены в `*.Contracts`, константы валидации — в `DumaLens.Entities.ValidationConstants`. Подробно — [Docs/05-architecture.md](Docs/05-architecture.md).
+29 проектов, строгие слои без обратных ссылок: `Api → Services → Repositories → Context → Entities`; `Web → Api.Client → Api.Models`; `Importer → Services / Parsing / Context`. Контракты вынесены в `*.Contracts`, константы валидации — в `DumaLens.Entities.ValidationConstants`. Подробно — [Docs/05-architecture.md](Docs/05-architecture.md).
 
 ## Документация
 

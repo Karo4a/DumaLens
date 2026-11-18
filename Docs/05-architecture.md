@@ -40,26 +40,33 @@ DumaLens.sln
 ├─ DumaLens.Parsing.Contracts       — контракты парсеров (IVotePageParser, IVoteListingParser, IVoteArchiveParser, ITitleNormalizer, IVoteParseValidator), модели разбора, Enums/ParseIssueCode
 ├─ DumaLens.Parsing                 — HTML-парсеры карточки/листинга, парсер JSON архива, нормализатор заголовков, валидатор разбора
 │
-├─ DumaLens.Importer                — CLI (System.CommandLine): import-archive, crawl, verify, recalc-stats
+├─ DumaLens.Importer                — CLI (System.CommandLine): import-archive, crawl, verify, recalc-stats,
+│                                      normalize-titles, restore-schema
 │
 ├─ DumaLens.Api                     — REST-хост: Program.cs, Controllers/ (Votes, Bills, Factions, Deputies,
 │                                      Convocations, Stats, Auth, Users), Infrastructure/ (ApiMapper,
 │                                      DumaLensExceptionFilter, EnumNameSchemaFilter), EnvironmentProvider
 ├─ DumaLens.Api.Models              — *ApiModel / *RequestApiModel, Enums/, ApiExceptionDetail
 ├─ DumaLens.Api.Client              — NSwag-клиент REST API (генерируется из OpenAPI-спеки, хранится в репозитории;
-│                                      паттерн Specular.Api.Client / DocumentGenerator.Api.Client)
+│                                      паттерн Specular.Api.Client / DocumentGenerator.Api.Client); partial-расширение
+│                                      VotesClient.SearchWithConditionsAsync — индексная сериализация фракционных
+│                                      условий (сгенерированный SearchAsync передаёт их через ToString, что API не связывает)
 │
 ├─ DumaLens.Web                     — фронтенд: Blazor Server (интерактивный серверный рендеринг, как
-│                                      DocumentGenerator.Web), Components/ (Pages, Layout), Services/
-│                                      (ClientTokenStore, UserState, AuthDelegatingHandler), wwwroot/;
-│                                      обращается к Api только по HTTP через DumaLens.Api.Client
+│                                      DocumentGenerator.Web), Components/ (Pages, Layout, Shared), wwwroot/
+│                                      (app.css — дизайн-токены светлой/тёмной тем, theme.js — переключатель тем);
+│                                      обращается к Api только по HTTP через DumaLens.Api.Client; стиль и
+│                                      компоновка — Docs/12-e8-ui.md. Auth-сервисы (ClientTokenStore, UserState,
+│                                      AuthDelegatingHandler) добавляются на Э9
 │
 ├─ DumaLens.Context.Tests           — база тестов: DumaLensContextInMemory + Prepare*-хелперы
 ├─ DumaLens.Repositories.Tests      — репозитории (InMemory)
 ├─ DumaLens.Services.Tests          — сервисы, нормализация, агрегаты, валидаторы (InMemory)
 ├─ DumaLens.Parsing.Tests           — парсеры и нормализаторы на HTML/JSON-фикстурах (без БД)
 ├─ DumaLens.Api.Tests               — интеграционные тесты API (WebApplicationFactory + PostgreSQL)
-└─ DumaLens.Database.Tests          — структура БД против модели EF (Npgsql)
+├─ DumaLens.Importer.Tests          — импорт/кроулер на фикстурах и одноразовых базах
+├─ DumaLens.Database.Tests          — структура БД против модели EF (Npgsql)
+└─ DumaLens.Web.Tests               — интеграционные тесты Web-хоста (WebApplicationFactory + моки клиентов Api)
 ```
 
 Направление зависимостей (строго сверху вниз, обратных ссылок нет):
@@ -121,6 +128,7 @@ Api.Models, *.Contracts — листовые проекты без зависи�
 - Данные — `TestEntityProvider.Shared.Create<T>(x => {...})`.
 - Интеграционные (`DumaLens.Api.Tests`): `TestWebApplicationFactory` + `appsettings.integration.json`, уникальное имя базы `dumalens_{Guid}`, окружение через `EnvironmentProvider.IntegrationEnvironment` (без опечатки эталона), `AddControllersAsServices()`, `DependenciesTests` ([Theory] по всем контроллерам). Отличие от эталона: PostgreSQL вместо LocalDB (ADR-3). Тесты auth: логин/refresh/logout, ролевой доступ (401/403) — с реальными сервисами и InMemory/PostgreSQL, без моков репозиториев.
 - `DumaLens.Parsing.Tests` — чистые юнит-тесты на фикстурах: сохранённые HTML (`vote_126282.html`, листинги) и JSON-файлы архива (включая пустое голосование и +0400).
+- `DumaLens.Web.Tests` — интеграционные тесты Web-хоста: `WebApplicationFactory<Program>` + подмена клиентов Api моками (Moq), проверка рендера страниц и сценариев S1/S2 (передача фракционных условий клиенту). HTML пререндера декодируется (`WebUtility.HtmlDecode`) перед ассертами.
 - Запуск: `dotnet test DumaLens.sln`; предупреждения ловить с `-t:Rebuild` (инкрементальная сборка прячет CS8618/CS1573).
 
 ### 2.5. Пакеты (пины)
@@ -172,8 +180,8 @@ ImportQuarantine — журнал аномалий импорта
 | `Deputies` | `SiteId` (bigint), `RowId` (int identity, ADR-14), `FullName`, `SortName` | unique `SiteId`; unique `RowId`; индекс `FullName` |
 | `DeputyFactionMemberships` | `DeputyId`, `FactionPeriodId`, `DateFrom`, `DateTo` (по данным голосований) | индекс (`DeputyId`, `FactionPeriodId`) |
 | `Bills` | `Number` (`500091-8`), `SozdUrl` (вычисляемая ссылка) | unique `Number` |
-| `Votes` | `SiteId` (bigint, id сайта), `RowId` (int identity, ADR-14), `Title`, `TitleSearch` (tsvector, generated), `VotedAt` (timestamptz), `UtcOffsetMinutes`, `ConvocationId`, `BillId` (null), `Stage` (enum), `StageRaw`, `Outcome` (enum), `AcceptCountTotal`, `DeclineCountTotal`, `AbstainCountTotal`, `NoneCountTotal`, `AcceptPercentSite` (null), `HasResults`, `Source` (archive/site) | unique `SiteId`; unique `RowId`; GIN `TitleSearch`; btree `VotedAt`, `ConvocationId`, `BillId`, `Stage`; составной (`ConvocationId`, `VotedAt`) |
-| `DeputyVotes` | `VoteId` (int → `Votes.RowId`), `DeputyId` (int → `Deputies.RowId`), `FactionPeriodId` (smallint? → `FactionPeriods.RowId`), `Result` (enum: accept/decline/abstain/none) — ADR-14 | PK (`VoteId`, `DeputyId`); индекс `DeputyId`; индекс (`VoteId`, `FactionPeriodId`); индекс `FactionPeriodId` |
+| `Votes` | `SiteId` (bigint, id сайта), `RowId` (int identity, ADR-14), `Title`, `TitleSearch` (tsvector, generated), `VotedAt` (timestamptz), `UtcOffsetMinutes`, `ConvocationId`, `BillId` (null), `Stage` (enum), `StageRaw`, `Outcome` (enum), `AcceptCountTotal`, `DeclineCountTotal`, `AbstainCountTotal`, `NoneCountTotal`, `AcceptPercentSite` (null), `HasResults`, `Source` (archive/site) | unique `SiteId`; unique `RowId`; GIN `TitleSearch`; btree `VotedAt`, `ConvocationId`, `BillId`, `Stage`; составной (`ConvocationId`, `VotedAt`); частичный `RowId` WHERE `DeletedAt` IS NOT NULL (анти-join личных счётчиков депутата) |
+| `DeputyVotes` | `VoteId` (int → `Votes.RowId`), `DeputyId` (int → `Deputies.RowId`), `FactionPeriodId` (smallint? → `FactionPeriods.RowId`), `Result` (enum: accept/decline/abstain/none) — ADR-14 | PK (`VoteId`, `DeputyId`); покрывающий индекс (`DeputyId`, `Result`, `VoteId`) — index-only scan личных счётчиков депутата; индекс (`VoteId`, `FactionPeriodId`); индекс `FactionPeriodId` |
 | `VoteFactionStats` | `VoteId`, `FactionPeriodId`, `FactionId` (денормализация для фильтра по канону), `AcceptCount`, `DeclineCount`, `AbstainCount`, `NoneCount`, `MemberCount`, `VotedCount`, `AcceptPctMembers`, `DeclinePctMembers`, `AbstainPctMembers`, `NonePctMembers`, `AcceptPctVoted`, `DeclinePctVoted`, `AbstainPctVoted` (numeric(5,2), null при нулевом знаменателе; «не голосовал» — только база members) | PK (`VoteId`, `FactionPeriodId`); 7 индексов (`FactionId`, <процент>) — по одному на каждый результат/базу, используемый в фильтрах |
 | `ImportQuarantine` | `SourceFile`/`SourceUrl`, `SiteId`, `Reason`, `RawJson`, `CreatedAt` | индекс `CreatedAt` |
 
