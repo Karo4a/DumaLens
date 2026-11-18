@@ -1,0 +1,105 @@
+﻿@page "/bills/{number}"
+
+<PageTitle>Законопроект № @Number — DumaLens</PageTitle>
+
+<Breadcrumbs Items="@(new BreadcrumbItem[] { new("Поиск", "/search"), new("Законопроект № " + Number) })" />
+
+@if (loading)
+{
+    <LoadingBlock />
+}
+else if (error != null)
+{
+    <ErrorBlock Message="@error" />
+}
+else if (bill != null)
+{
+    <div class="card-head">
+        <h1 class="card-title">Законопроект № @bill.Number</h1>
+        <div class="card-meta">
+            <span><b>Голосований:</b> @bill.Votes.Count</span>
+            @if (!string.IsNullOrEmpty(bill.SozdUrl))
+            {
+                <a class="ext" href="@bill.SozdUrl" target="_blank" rel="noopener">Карточка в СОЗД ↗</a>
+            }
+        </div>
+    </div>
+
+    <div class="card-section card">
+        <div class="section-head"><h2>Хронология голосований</h2></div>
+        @if (bill.Votes.Count == 0)
+        {
+            <EmptyState Message="По законопроекту нет голосований." />
+        }
+        else
+        {
+            <div class="table-scroll">
+                <table class="matrix">
+                    <thead>
+                        <tr><th>Дата</th><th>Стадия</th><th>Итог</th><th>Позиции фракций (за, % от состава)</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var v in bill.Votes)
+                        {
+                            <tr>
+                                <td><a href="/votes/@v.Id">@UiFormat.DateTimeLabel(v.VotedAt)</a></td>
+                                <td>@UiFormat.StageLabel(v.Stage)</td>
+                                <td><ResultBadge Text="@UiFormat.OutcomeLabel(v.Outcome)" CssClass="@UiFormat.OutcomeClass(v.Outcome)" Small="true" /></td>
+                                <td>
+                                    <div class="mini-factions">
+                                        @foreach (var p in v.FactionPositions.OrderBy(p => UiFormat.FactionSortKey(p.FactionCode)))
+                                        {
+                                            <span class="mini-fac"><i>@p.FactionCode</i><b class="r-for">@UiFormat.Percent(p.AcceptPctMembers)</b></span>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    /// <summary>
+    /// Номер законопроекта
+    /// </summary>
+    [Parameter]
+    public string Number { get; set; } = string.Empty;
+
+    [Inject]
+    private IBillsClient Bills { get; set; } = default!;
+
+    private BillApiModel? bill;
+    private bool loading = true;
+    private string? error;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        loading = true;
+        error = null;
+        try
+        {
+            bill = await Bills.GetCardAsync(Number);
+        }
+        catch (ApiException ex) when (ex.StatusCode == 404)
+        {
+            bill = null;
+            error = "Законопроект не найден.";
+        }
+        catch (ApiException ex)
+        {
+            error = "Не удалось загрузить законопроект (код " + ex.StatusCode + ").";
+        }
+        catch (HttpRequestException)
+        {
+            error = "Сервис поиска недоступен.";
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+}

@@ -1,0 +1,9 @@
+﻿<div class="state-block error" role="alert">@Message</div>
+
+@code {
+    /// <summary>
+    /// Сообщение об ошибке
+    /// </summary>
+    [Parameter]
+    public string Message { get; set; } = "Не удалось загрузить данные.";
+}

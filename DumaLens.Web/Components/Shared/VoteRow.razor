@@ -1,0 +1,42 @@
+﻿<article class="result-row">
+    <div class="result-main">
+        <a class="result-title" href="/votes/@Vote.Id">@Vote.Title</a>
+        <div class="result-meta">
+            @if (!string.IsNullOrEmpty(Vote.BillNumber))
+            {
+                <a class="chip" href="/bills/@Vote.BillNumber">№ @Vote.BillNumber</a>
+            }
+            <span class="chip">@UiFormat.StageLabel(Vote.Stage)</span>
+            <span class="chip">@Vote.Convocation созыв</span>
+            <span class="result-date">@UiFormat.DateTimeLabel(Vote.VotedAt)</span>
+            <ResultBadge Text="@UiFormat.OutcomeLabel(Vote.Outcome)" CssClass="@UiFormat.OutcomeClass(Vote.Outcome)" Small="true" />
+        </div>
+        @if (Vote.FactionStats.Count > 0)
+        {
+            <div class="mini-factions">
+                <span class="mini-legend">за / против, % от состава:</span>
+                @foreach (var s in Ordered())
+                {
+                    <span class="mini-fac">
+                        <i>@s.FactionCode</i>
+                        <b class="r-for">@UiFormat.Percent(s.AcceptPctMembers)</b>
+                        <b class="@(s.DeclineCount > 0 ? "r-against" : "r-none zero")">@UiFormat.Percent(s.DeclinePctMembers)</b>
+                    </span>
+                }
+            </div>
+        }
+    </div>
+</article>
+
+@code {
+    /// <summary>
+    /// Голосование в результатах поиска
+    /// </summary>
+    [Parameter]
+    public VoteApiModel Vote { get; set; } = default!;
+
+    private IEnumerable<VoteFactionStatsApiModel> Ordered()
+    {
+        return Vote.FactionStats.OrderBy(s => UiFormat.FactionSortKey(s.FactionCode));
+    }
+}

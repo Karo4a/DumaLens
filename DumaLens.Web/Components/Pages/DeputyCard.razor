@@ -1,0 +1,89 @@
+﻿@page "/deputies/{id:long}"
+
+<PageTitle>@(deputy?.FullName ?? "Депутат") — DumaLens</PageTitle>
+
+<Breadcrumbs Items="@(new BreadcrumbItem[] { new("Депутаты", "/deputies"), new(deputy?.FullName ?? Id.ToString()) })" />
+
+@if (loading)
+{
+    <LoadingBlock />
+}
+else if (error != null)
+{
+    <ErrorBlock Message="@error" />
+}
+else if (deputy != null)
+{
+    <div class="card-head"><h1 class="card-title">@deputy.FullName</h1></div>
+
+    <div class="stat-grid">
+        <StatCard Value="@UiFormat.Number(deputy.TotalVotes)" Label="Голосований" />
+        <StatCard Value="@UiFormat.Percent(deputy.ParticipationPct)" Label="Участие" />
+        <StatCard Value="@UiFormat.Number(deputy.AcceptCount)" Label="За" />
+        <StatCard Value="@UiFormat.Number(deputy.DeclineCount)" Label="Против" />
+        <StatCard Value="@UiFormat.Number(deputy.AbstainCount)" Label="Воздержался" />
+        <StatCard Value="@UiFormat.Number(deputy.NoneCount)" Label="Не голосовал" />
+    </div>
+
+    <div class="card-section card">
+        <div class="section-head"><h2>Членство во фракциях</h2></div>
+        <div class="table-scroll">
+            <table class="matrix">
+                <thead><tr><th>Созыв</th><th>Фракция</th><th>Название в созыве</th><th>Период</th></tr></thead>
+                <tbody>
+                    @foreach (var m in deputy.Factions.OrderByDescending(m => m.Convocation))
+                    {
+                        <tr>
+                            <td>@m.Convocation</td>
+                            <td><a href="/factions/@m.FactionCode">@m.FactionTitle</a></td>
+                            <td>@m.PeriodTitle</td>
+                            <td>@UiFormat.DateRange(m.DateFrom, m.DateTo)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@code {
+    /// <summary>
+    /// Идентификатор депутата
+    /// </summary>
+    [Parameter]
+    public long Id { get; set; }
+
+    [Inject]
+    private IDeputiesClient Deputies { get; set; } = default!;
+
+    private DeputyApiModel? deputy;
+    private bool loading = true;
+    private string? error;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        loading = true;
+        error = null;
+        try
+        {
+            deputy = await Deputies.GetCardAsync(Id);
+        }
+        catch (ApiException ex) when (ex.StatusCode == 404)
+        {
+            deputy = null;
+            error = "Депутат не найден.";
+        }
+        catch (ApiException ex)
+        {
+            error = "Не удалось загрузить депутата (код " + ex.StatusCode + ").";
+        }
+        catch (HttpRequestException)
+        {
+            error = "Сервис поиска недоступен.";
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+}

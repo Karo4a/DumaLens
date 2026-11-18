@@ -1,7 +1,116 @@
 ﻿@page "/"
 
-<PageTitle>DumaLens</PageTitle>
+<PageTitle>DumaLens — аналитика голосований Госдумы</PageTitle>
 
-<h1>DumaLens</h1>
+<div class="home-hero">
+    <div class="page-head">
+        <h1>DumaLens</h1>
+        <p class="lead">Поиск и аналитика голосований Государственной Думы</p>
+    </div>
+    <form class="search-bar" @onsubmit="SubmitSearch" @onsubmit:preventDefault>
+        <input class="search-input" type="search" @bind="query" placeholder="Поиск по названиям голосований… (напр. алкоголь)" />
+        <button class="btn-primary" type="submit">Найти</button>
+    </form>
+</div>
 
-<p>Каркас решения (Э0). Разделы появятся на Э8.</p>
+@if (loading)
+{
+    <LoadingBlock />
+}
+else
+{
+    @if (error != null)
+    {
+        <ErrorBlock Message="@error" />
+    }
+    @if (overview != null)
+    {
+        <div class="stat-grid">
+            <StatCard Value="@UiFormat.Number(overview.TotalVotes)" Label="Голосований" />
+            <StatCard Value="@UiFormat.Number(overview.TotalDeputies)" Label="Депутатов" />
+            <StatCard Value="@UiFormat.Number(overview.TotalFactions)" Label="Фракций" />
+            <StatCard Value="@UiFormat.Number(overview.TotalBills)" Label="Законопроектов" />
+        </div>
+        @if (overview.DateFrom.HasValue)
+        {
+            <p class="lead">Период данных: @UiFormat.DateRange(overview.DateFrom, overview.DateTo)</p>
+        }
+    }
+}
+
+@if (convocations.Count > 0)
+{
+    <h2 class="section-title">Созывы</h2>
+    <div class="quick-links">
+        @foreach (var c in convocations)
+        {
+            <a class="chip" href="/search?convocation=@c.Number">@c.Title</a>
+        }
+    </div>
+}
+
+<h2 class="section-title">Примеры запросов</h2>
+<div class="example-queries">
+    <a href="/search?q=алкоголь">S1 · Поиск «алкоголь» → законопроект 500091-8 → хронология чтений</a>
+    <a href="/search?factionConditions[0].faction=NL&factionConditions[0].result=accept&factionConditions[0].operator=gte&factionConditions[0].threshold=70&factionConditions[0].basis=members&factionConditions[1].faction=KPRF&factionConditions[1].result=decline&factionConditions[1].operator=gte&factionConditions[1].threshold=50&factionConditions[1].basis=members">S2 · НЛ ЗА ≥ 70% И КПРФ ПРОТИВ ≥ 50% (расхождение позиций)</a>
+    <a href="/search?factionConditions[0].faction=ER&factionConditions[0].result=accept&factionConditions[0].operator=gte&factionConditions[0].threshold=90&factionConditions[0].basis=members">S3 · ЕР ЗА ≥ 90% (почти единогласно)</a>
+</div>
+
+@code {
+    [Inject]
+    private IStatsClient Stats { get; set; } = default!;
+
+    [Inject]
+    private IConvocationsClient Convocations { get; set; } = default!;
+
+    [Inject]
+    private NavigationManager Nav { get; set; } = default!;
+
+    private StatsOverviewApiModel? overview;
+    private IReadOnlyList<ConvocationApiModel> convocations = [];
+    private string query = string.Empty;
+    private bool loading = true;
+    private string? error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Раздельная обработка: сбой одного вызова не скрывает данные второго и виден пользователю
+        try
+        {
+            overview = await Stats.GetOverviewAsync();
+        }
+        catch (ApiException ex)
+        {
+            overview = null;
+            error = "Не удалось загрузить сводку (код " + ex.StatusCode + ").";
+        }
+        catch (HttpRequestException)
+        {
+            overview = null;
+            error = "Сервис поиска недоступен.";
+        }
+
+        try
+        {
+            convocations = (await Convocations.GetAllAsync()).OrderBy(c => c.Number).ToList();
+        }
+        catch (ApiException ex)
+        {
+            convocations = [];
+            error ??= "Не удалось загрузить созывы (код " + ex.StatusCode + ").";
+        }
+        catch (HttpRequestException)
+        {
+            convocations = [];
+            error ??= "Сервис поиска недоступен.";
+        }
+
+        loading = false;
+    }
+
+    private void SubmitSearch()
+    {
+        var url = string.IsNullOrWhiteSpace(query) ? "/search" : "/search?q=" + Uri.EscapeDataString(query.Trim());
+        Nav.NavigateTo(url);
+    }
+}

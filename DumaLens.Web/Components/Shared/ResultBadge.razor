@@ -1,0 +1,21 @@
+﻿<span class="badge @CssClass @(Small ? "sm" : "")">@Text</span>
+
+@code {
+    /// <summary>
+    /// Текст бейджа (подпись результата или итога)
+    /// </summary>
+    [Parameter]
+    public string Text { get; set; } = string.Empty;
+
+    /// <summary>
+    /// CSS-класс семантики цвета (r-for / r-against / r-abstain / r-none)
+    /// </summary>
+    [Parameter]
+    public string CssClass { get; set; } = "r-none";
+
+    /// <summary>
+    /// Уменьшенный размер бейджа
+    /// </summary>
+    [Parameter]
+    public bool Small { get; set; }
+}

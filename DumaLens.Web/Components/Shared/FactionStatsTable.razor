@@ -1,0 +1,76 @@
+﻿<div class="card-section card">
+    <div class="section-head">
+        <h2>Позиции фракций</h2>
+        @if (ShowBasisToggle)
+        {
+            <div class="basis-toggle">
+                <button type="button" class="seg @(basis == "members" ? "active" : "")" @onclick='() => basis = "members"'>% от состава</button>
+                <button type="button" class="seg @(basis == "voted" ? "active" : "")" @onclick='() => basis = "voted"'>% от голосовавших</button>
+            </div>
+        }
+    </div>
+    <div class="table-scroll">
+        <table class="matrix">
+            <thead>
+                <tr>
+                    <th class="fac-name">Фракция</th>
+                    <th class="num r-for">За</th>
+                    <th class="num r-against">Против</th>
+                    <th class="num r-abstain">Воздержался</th>
+                    <th class="num r-none">Не голосовал</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var s in Ordered())
+                {
+                    <tr>
+                        <td class="fac-name">
+                            @if (string.IsNullOrEmpty(s.FactionCode))
+                            {
+                                <span>@(s.FactionTitle ?? "Вне фракций")</span>
+                            }
+                            else
+                            {
+                                <a href="/factions/@s.FactionCode">@(s.FactionTitle ?? s.FactionCode)</a>
+                            }
+                            <span class="fac-total">@s.MemberCount чел.</span>
+                        </td>
+                        @Cell(s.AcceptCount, basis == "voted" ? s.AcceptPctVoted : s.AcceptPctMembers, "r-for")
+                        @Cell(s.DeclineCount, basis == "voted" ? s.DeclinePctVoted : s.DeclinePctMembers, "r-against")
+                        @Cell(s.AbstainCount, basis == "voted" ? s.AbstainPctVoted : s.AbstainPctMembers, "r-abstain")
+                        @Cell(s.NoneCount, s.NonePctMembers, "r-none")
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <p class="table-note">
+        @(basis == "voted"
+            ? "Проценты — от проголосовавших депутатов фракции; «не голосовал» — от состава (Docs/04 §1.2)."
+            : "Проценты — от состава фракции. «Не голосовал» считается только от состава (Docs/04 §1.2).")
+    </p>
+</div>
+
+@code {
+    /// <summary>
+    /// Статистика фракций по голосованию
+    /// </summary>
+    [Parameter]
+    public ICollection<VoteFactionStatsApiModel> Stats { get; set; } = [];
+
+    /// <summary>
+    /// Показывать переключатель базы процента
+    /// </summary>
+    [Parameter]
+    public bool ShowBasisToggle { get; set; } = true;
+
+    private string basis = "members";
+
+    private IEnumerable<VoteFactionStatsApiModel> Ordered()
+    {
+        return Stats.OrderBy(s => UiFormat.FactionSortKey(s.FactionCode));
+    }
+
+    private RenderFragment Cell(int count, double? pct, string cls) =>
+        @<td class="num @cls @(count == 0 ? "zero" : "")"><b>@count</b><span class="pct">@UiFormat.Percent(pct)</span></td>;
+}

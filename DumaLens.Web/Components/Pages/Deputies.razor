@@ -1,0 +1,114 @@
+﻿@page "/deputies"
+
+<PageTitle>Депутаты — DumaLens</PageTitle>
+
+<div class="page-head"><h1>Депутаты</h1><p class="lead">Депутаты по созыву</p></div>
+
+<div class="filters card">
+    <label class="field">
+        <span>Созыв</span>
+        <select class="ctl" value="@convocation" @onchange="OnConvocationChanged">
+            @foreach (var c in convocations)
+            {
+                <option value="@c.Number">@c.Title</option>
+            }
+        </select>
+    </label>
+</div>
+
+@if (loading)
+{
+    <LoadingBlock />
+}
+else if (error != null)
+{
+    <ErrorBlock Message="@error" />
+}
+else if (deputies.Count == 0)
+{
+    <EmptyState Message="В созыве нет депутатов." />
+}
+else
+{
+    <div class="results">
+        @foreach (var d in deputies)
+        {
+            <article class="result-row">
+                <a class="result-title" href="/deputies/@d.Id">@d.FullName</a>
+                <div class="result-meta">
+                    @foreach (var fc in d.FactionCodes)
+                    {
+                        <span class="chip">@fc</span>
+                    }
+                </div>
+            </article>
+        }
+    </div>
+}
+
+@code {
+    [Inject]
+    private IDeputiesClient DeputiesClient { get; set; } = default!;
+
+    [Inject]
+    private IConvocationsClient ConvocationsClient { get; set; } = default!;
+
+    private IReadOnlyList<ConvocationApiModel> convocations = [];
+    private IReadOnlyList<DeputyListItemApiModel> deputies = [];
+    private int convocation = 8;
+    private bool loading = true;
+    private string? error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            convocations = (await ConvocationsClient.GetAllAsync()).OrderByDescending(c => c.Number).ToList();
+            if (convocations.Count > 0)
+            {
+                convocation = convocations[0].Number;
+            }
+        }
+        catch (ApiException)
+        {
+            convocations = [];
+        }
+        catch (HttpRequestException)
+        {
+            convocations = [];
+        }
+
+        await LoadDeputies();
+    }
+
+    private async Task OnConvocationChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var number))
+        {
+            convocation = number;
+            await LoadDeputies();
+        }
+    }
+
+    private async Task LoadDeputies()
+    {
+        loading = true;
+        error = null;
+        try
+        {
+            deputies = (await DeputiesClient.GetByConvocationAsync(convocation)).OrderBy(d => d.SortName).ToList();
+        }
+        catch (ApiException ex)
+        {
+            error = "Не удалось загрузить депутатов (код " + ex.StatusCode + ").";
+        }
+        catch (HttpRequestException)
+        {
+            error = "Сервис поиска недоступен.";
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+}

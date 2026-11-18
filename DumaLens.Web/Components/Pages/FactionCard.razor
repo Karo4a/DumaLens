@@ -1,0 +1,109 @@
+﻿@page "/factions/{code}"
+
+<PageTitle>@(faction?.Title ?? "Фракция") — DumaLens</PageTitle>
+
+<Breadcrumbs Items="@(new BreadcrumbItem[] { new("Фракции", "/factions"), new(faction?.Title ?? Code) })" />
+
+@if (loading)
+{
+    <LoadingBlock />
+}
+else if (error != null)
+{
+    <ErrorBlock Message="@error" />
+}
+else if (faction != null)
+{
+    <div class="card-head">
+        <h1 class="card-title">@faction.Title</h1>
+        <div class="card-meta"><span class="chip">@faction.Code</span></div>
+    </div>
+
+    <div class="card-section card">
+        <div class="section-head"><h2>История названий</h2></div>
+        <div class="table-scroll">
+            <table class="matrix">
+                <thead><tr><th>Созыв</th><th>Название</th><th>Период</th></tr></thead>
+                <tbody>
+                    @foreach (var p in faction.Periods.OrderByDescending(p => p.Convocation))
+                    {
+                        <tr><td>@p.Convocation</td><td>@p.Title</td><td>@UiFormat.DateRange(p.DateFrom, p.DateTo)</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    @if (faction.ConvocationStats.Count > 0)
+    {
+        <div class="card-section card">
+            <div class="section-head"><h2>Статистика по созывам</h2><span class="muted">средние проценты от состава</span></div>
+            <div class="table-scroll">
+                <table class="matrix">
+                    <thead>
+                        <tr>
+                            <th>Созыв</th><th class="num">Голосований</th>
+                            <th class="num r-for">За</th><th class="num r-against">Против</th>
+                            <th class="num r-abstain">Воздержался</th><th class="num r-none">Не голосовал</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var s in faction.ConvocationStats.OrderByDescending(s => s.Convocation))
+                        {
+                            <tr>
+                                <td>@s.Convocation</td>
+                                <td class="num">@UiFormat.Number(s.VoteCount)</td>
+                                <td class="num r-for">@UiFormat.Percent(s.AvgAcceptPctMembers)</td>
+                                <td class="num r-against">@UiFormat.Percent(s.AvgDeclinePctMembers)</td>
+                                <td class="num r-abstain">@UiFormat.Percent(s.AvgAbstainPctMembers)</td>
+                                <td class="num r-none">@UiFormat.Percent(s.AvgNonePctMembers)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+}
+
+@code {
+    /// <summary>
+    /// Код канонической фракции
+    /// </summary>
+    [Parameter]
+    public string Code { get; set; } = string.Empty;
+
+    [Inject]
+    private IFactionsClient Factions { get; set; } = default!;
+
+    private FactionApiModel? faction;
+    private bool loading = true;
+    private string? error;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        loading = true;
+        error = null;
+        try
+        {
+            faction = await Factions.GetCardAsync(Code);
+        }
+        catch (ApiException ex) when (ex.StatusCode == 404)
+        {
+            faction = null;
+            error = "Фракция не найдена.";
+        }
+        catch (ApiException ex)
+        {
+            error = "Не удалось загрузить фракцию (код " + ex.StatusCode + ").";
+        }
+        catch (HttpRequestException)
+        {
+            error = "Сервис поиска недоступен.";
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+}

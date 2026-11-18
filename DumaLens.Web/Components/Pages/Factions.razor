@@ -1,0 +1,59 @@
+﻿@page "/factions"
+
+<PageTitle>Фракции — DumaLens</PageTitle>
+
+<div class="page-head"><h1>Фракции</h1><p class="lead">Канонические фракции с историей названий</p></div>
+
+@if (loading)
+{
+    <LoadingBlock />
+}
+else if (error != null)
+{
+    <ErrorBlock Message="@error" />
+}
+else if (factions.Count == 0)
+{
+    <EmptyState />
+}
+else
+{
+    <div class="results">
+        @foreach (var f in factions)
+        {
+            <article class="result-row">
+                <a class="result-title" href="/factions/@f.Code">@f.Title</a>
+                <div class="result-meta"><span class="chip">@f.Code</span><span class="chip">@f.Periods.Count @UiFormat.Plural(f.Periods.Count, "период", "периода", "периодов")</span></div>
+            </article>
+        }
+    </div>
+}
+
+@code {
+    [Inject]
+    private IFactionsClient FactionsClient { get; set; } = default!;
+
+    private IReadOnlyList<FactionApiModel> factions = [];
+    private bool loading = true;
+    private string? error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            factions = (await FactionsClient.GetAllAsync()).OrderBy(f => UiFormat.FactionSortKey(f.Code)).ToList();
+        }
+        catch (ApiException ex)
+        {
+            error = "Не удалось загрузить фракции (код " + ex.StatusCode + ").";
+        }
+        catch (HttpRequestException)
+        {
+            error = "Сервис поиска недоступен.";
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+}

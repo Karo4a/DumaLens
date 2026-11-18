@@ -1,0 +1,63 @@
+﻿@page "/convocations"
+
+<PageTitle>Созывы — DumaLens</PageTitle>
+
+<div class="page-head"><h1>Созывы</h1><p class="lead">Государственная Дума: созывы и число голосований</p></div>
+
+@if (loading)
+{
+    <LoadingBlock />
+}
+else if (error != null)
+{
+    <ErrorBlock Message="@error" />
+}
+else if (convocations.Count == 0)
+{
+    <EmptyState />
+}
+else
+{
+    <div class="results">
+        @foreach (var c in convocations)
+        {
+            <article class="result-row">
+                <a class="result-title" href="/search?convocation=@c.Number">@c.Title</a>
+                <div class="result-meta">
+                    <span class="chip">@c.Number созыв</span>
+                    <span class="chip">@UiFormat.Number(c.VoteCount) @UiFormat.Plural(c.VoteCount, "голосование", "голосования", "голосований")</span>
+                    <span class="result-date">@UiFormat.DateRange(c.DateFrom, c.DateTo)</span>
+                </div>
+            </article>
+        }
+    </div>
+}
+
+@code {
+    [Inject]
+    private IConvocationsClient ConvocationsClient { get; set; } = default!;
+
+    private IReadOnlyList<ConvocationApiModel> convocations = [];
+    private bool loading = true;
+    private string? error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            convocations = (await ConvocationsClient.GetAllAsync()).OrderBy(c => c.Number).ToList();
+        }
+        catch (ApiException ex)
+        {
+            error = "Не удалось загрузить созывы (код " + ex.StatusCode + ").";
+        }
+        catch (HttpRequestException)
+        {
+            error = "Сервис поиска недоступен.";
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+}

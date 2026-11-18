@@ -1,0 +1,52 @@
+﻿@page "/votes/{id:long}"
+
+<PageTitle>Голосование № @Id — DumaLens</PageTitle>
+
+<Breadcrumbs Items="@(new BreadcrumbItem[] { new("Поиск", "/search"), new("Голосование № " + Id) })" />
+
+@if (loading)
+{
+    <LoadingBlock />
+}
+else if (error != null)
+{
+    <ErrorBlock Message="@error" />
+}
+else if (vote != null)
+{
+    <div class="card-head">
+        <div class="card-badges">
+            <ResultBadge Text="@UiFormat.OutcomeLabel(vote.Outcome)" CssClass="@UiFormat.OutcomeClass(vote.Outcome)" />
+            <span class="chip">@UiFormat.StageLabel(vote.Stage)</span>
+            <span class="chip">@vote.Convocation созыв</span>
+            <span class="chip">№ @vote.Id</span>
+        </div>
+        <h1 class="card-title">@vote.Title</h1>
+        <div class="card-meta">
+            <span><b>Дата:</b> @UiFormat.DateTimeLabel(vote.VotedAt) (МСК)</span>
+            @if (!string.IsNullOrEmpty(vote.BillNumber))
+            {
+                <span><b>Законопроект:</b> <a href="/bills/@vote.BillNumber">№ @vote.BillNumber</a></span>
+            }
+            <span><b>Источник:</b> @UiFormat.SourceLabel(vote.Source)</span>
+        </div>
+    </div>
+
+    <FactionStatsTable Stats="vote.FactionStats" />
+
+    <div class="card-section card">
+        <div class="section-head">
+            <h2>Депутаты по фракциям</h2>
+            <span class="muted">@TotalDeputies @UiFormat.Plural(TotalDeputies, "депутат", "депутата", "депутатов")</span>
+        </div>
+        <DeputyList Groups="vote.DeputyVoteGroups" />
+    </div>
+
+    <div class="card-links">
+        @if (!string.IsNullOrEmpty(vote.BillNumber))
+        {
+            <a href="/bills/@vote.BillNumber">← Все голосования законопроекта № @vote.BillNumber</a>
+        }
+        <a href="/search">К поиску →</a>
+    </div>
+}

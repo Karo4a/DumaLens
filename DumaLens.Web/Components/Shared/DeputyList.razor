@@ -1,0 +1,42 @@
+﻿<div class="dep-groups">
+    @foreach (var group in Ordered())
+    {
+        var accept = group.Deputies.Count(d => d.Result == VoteResult.Accept);
+        var none = group.Deputies.Count(d => d.Result == VoteResult.None);
+        <div class="dep-group">
+            <div class="dep-group-head">
+                @if (string.IsNullOrEmpty(group.FactionCode))
+                {
+                    <span>@(group.FactionTitle ?? "Вне фракций")</span>
+                }
+                else
+                {
+                    <a href="/factions/@group.FactionCode">@(group.FactionTitle ?? group.FactionCode)</a>
+                }
+                <span class="dep-group-stat"><span class="r-for">@accept за</span> · <span class="r-none">@none не голосовали</span></span>
+            </div>
+            <ul class="dep-list">
+                <Virtualize Items="group.Deputies" Context="dep">
+                    <li class="dep @UiFormat.ResultClass(dep.Result)">
+                        <span class="dep-mark">@UiFormat.ResultMark(dep.Result)</span>
+                        <a href="/deputies/@dep.Id">@dep.FullName</a>
+                        <ResultBadge Text="@UiFormat.ResultLabel(dep.Result)" CssClass="@UiFormat.ResultClass(dep.Result)" Small="true" />
+                    </li>
+                </Virtualize>
+            </ul>
+        </div>
+    }
+</div>
+
+@code {
+    /// <summary>
+    /// Голоса депутатов, сгруппированные по фракциям
+    /// </summary>
+    [Parameter]
+    public ICollection<DeputyVoteGroupApiModel> Groups { get; set; } = [];
+
+    private IEnumerable<DeputyVoteGroupApiModel> Ordered()
+    {
+        return Groups.OrderBy(g => UiFormat.FactionSortKey(g.FactionCode));
+    }
+}

@@ -1,0 +1,112 @@
+﻿@page "/search"
+
+<PageTitle>Поиск голосований — DumaLens</PageTitle>
+
+<div class="page-head">
+    <h1>Поиск голосований</h1>
+    <p class="lead">Полнотекстовый поиск, фильтры и фракционные условия (объединяются по И). Состояние фильтров сохраняется в ссылке.</p>
+</div>
+
+<form @onsubmit="ApplySearch" @onsubmit:preventDefault>
+    <div class="search-bar">
+        <input class="search-input" type="search" @bind="q" placeholder="Поиск по названиям голосований… (необязательно при поиске по фракциям)" />
+        <button class="btn-primary" type="submit">Найти</button>
+    </div>
+
+    <div class="filters card">
+        <div class="filters-grid">
+            <label class="field">
+                <span>Созыв</span>
+                <select class="ctl" @bind="convocation">
+                    <option value="">Все созывы</option>
+                    @foreach (var c in convocations)
+                    {
+                        <option value="@c.Number">@c.Title</option>
+                    }
+                </select>
+            </label>
+            <label class="field">
+                <span>Период</span>
+                <div class="dates">
+                    <input class="ctl" type="date" value="@dateFrom" @onchange='e => dateFrom = e.Value?.ToString() ?? ""' />
+                    <input class="ctl" type="date" value="@dateTo" @onchange='e => dateTo = e.Value?.ToString() ?? ""' />
+                </div>
+            </label>
+            <label class="field">
+                <span>№ законопроекта</span>
+                <input class="ctl" @bind="billNumber" placeholder="напр. 500091-8" />
+            </label>
+            <label class="field">
+                <span>Стадия</span>
+                <select class="ctl" @bind="stage">
+                    <option value="">Любая</option>
+                    <option value="FirstReading">первое чтение</option>
+                    <option value="SecondReading">второе чтение</option>
+                    <option value="SecondReadingAcceptedAmendments">поправки (принятые)</option>
+                    <option value="SecondReadingRejectedAmendments">поправки (отклонённые)</option>
+                    <option value="ThirdReading">третье чтение</option>
+                    <option value="AsBasis">за основу</option>
+                    <option value="AsWhole">в целом</option>
+                    <option value="Reject">отклонение законопроекта</option>
+                    <option value="ReturnToSecondReading">возврат ко второму чтению</option>
+                    <option value="Procedural">процедурное</option>
+                    <option value="Unknown">неизвестно</option>
+                </select>
+            </label>
+            <label class="field">
+                <span>Итог</span>
+                <select class="ctl" @bind="outcome">
+                    <option value="">Любой</option>
+                    <option value="accepted">Принят</option>
+                    <option value="rejected">Отклонён</option>
+                    <option value="unknown">Неизвестно</option>
+                </select>
+            </label>
+        </div>
+
+        <ConditionBuilder @bind-Conditions="conditions" Factions="factions" />
+
+        <div class="cond-actions">
+            <button type="button" class="btn-link" @onclick="ResetFilters">Сбросить фильтры</button>
+        </div>
+    </div>
+</form>
+
+@if (loading)
+{
+    <LoadingBlock />
+}
+else if (error != null)
+{
+    <ErrorBlock Message="@error" />
+}
+else if (result != null)
+{
+    <div class="results-head">
+        <div class="results-count">Найдено <b>@UiFormat.Number(result.TotalCount)</b> @UiFormat.Plural(result.TotalCount, "голосование", "голосования", "голосований")</div>
+        <label class="sort">
+            Сортировка:
+            <select class="ctl" @bind="sort" @bind:after="ApplySearch">
+                <option value="dateDesc">по дате ↓</option>
+                <option value="dateAsc">по дате ↑</option>
+                <option value="relevance">по релевантности</option>
+                <option value="acceptCountDesc">по числу «за» ↓</option>
+            </select>
+        </label>
+    </div>
+
+    @if (result.Items.Count == 0)
+    {
+        <EmptyState Message="По заданным условиям ничего не найдено." />
+    }
+    else
+    {
+        <div class="results">
+            @foreach (var v in result.Items)
+            {
+                <VoteRow Vote="v" />
+            }
+        </div>
+        <Pager Page="result.Page" TotalCount="result.TotalCount" PageSize="result.PageSize" OnPageChanged="OnPageChanged" />
+    }
+}
