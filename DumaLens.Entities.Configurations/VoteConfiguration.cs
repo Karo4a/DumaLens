@@ -66,5 +66,9 @@ public class VoteConfiguration : IEntityTypeConfiguration<Vote>, IEntityConfigur
         builder.HasIndex(x => x.BillId, $"IX_{nameof(Vote)}_{nameof(Vote.BillId)}");
         builder.HasIndex(x => x.Stage, $"IX_{nameof(Vote)}_{nameof(Vote.Stage)}");
         builder.HasIndex(x => new { x.ConvocationId, x.VotedAt }, $"IX_{nameof(Vote)}_{nameof(Vote.ConvocationId)}_{nameof(Vote.VotedAt)}");
+        // Частичный индекс удалённых голосований: анти-join личных счётчиков депутата читает только его
+        // (удалённых единиц), а не seq-scan всей Votes; см. DeputyReadRepository.GetCardBySiteId
+        builder.HasIndex(x => x.RowId, $"IX_{nameof(Vote)}_Deleted_{nameof(Vote.RowId)}")
+            .HasFilter($"\"{nameof(Vote.DeletedAt)}\" IS NOT NULL");
     }
 }

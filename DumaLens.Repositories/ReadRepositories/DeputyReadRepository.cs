@@ -56,14 +56,13 @@ public class DeputyReadRepository : IDeputyReadRepository, IRepositoryAnchor
             .OrderBy(x => x.ConvocationNumber)
             .ThenBy(x => x.DateFrom)
             .ToReadOnlyCollectionAsync(cancellationToken);
-        // Счётчики личных результатов — только по неудалённым голосованиям
-        var counters = await reader.Read<Vote>()
-            .NotDeletedAt()
-            .Join(reader.Read<DeputyVote>(),
-                vote => vote.RowId,
-                deputyVote => deputyVote.VoteId,
-                (vote, deputyVote) => deputyVote)
+        // Счётчики личных результатов — только по неудалённым голосованиям.
+        // Driving-таблица — DeputyVote по индексу IX_DeputyVote_DeputyId; soft-delete отсекается
+        // анти-join по списку удалённых голосований (их единицы), а не join ко всей Votes на каждую строку.
+        var deletedVoteIds = reader.Read<Vote>().Where(v => v.DeletedAt != null).Select(v => v.RowId);
+        var counters = await reader.Read<DeputyVote>()
             .Where(x => x.DeputyId == deputy.RowId)
+            .Where(x => !deletedVoteIds.Contains(x.VoteId))
             .GroupBy(x => x.Result)
             .Select(g => new { Result = g.Key, Count = g.Count() })
             .ToListAsync(cancellationToken);

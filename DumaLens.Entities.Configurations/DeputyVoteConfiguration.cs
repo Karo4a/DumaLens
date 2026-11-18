@@ -40,7 +40,9 @@ public class DeputyVoteConfiguration : IEntityTypeConfiguration<DeputyVote>, IEn
         builder.Property(x => x.FactionPeriodId)
             .HasColumnType("smallint");
 
-        builder.HasIndex(x => x.DeputyId, $"IX_{nameof(DeputyVote)}_{nameof(DeputyVote.DeputyId)}");
+        // Покрывающий индекс личных счётчиков депутата: (DeputyId, Result, VoteId) даёт index-only scan
+        // без heap-чтений (фильтр DeputyId, группировка Result, анти-join VoteId) — GetCardBySiteId
+        builder.HasIndex(x => new { x.DeputyId, x.Result, x.VoteId }, $"IX_{nameof(DeputyVote)}_{nameof(DeputyVote.DeputyId)}");
         builder.HasIndex(x => new { x.VoteId, x.FactionPeriodId }, $"IX_{nameof(DeputyVote)}_{nameof(DeputyVote.VoteId)}_{nameof(DeputyVote.FactionPeriodId)}");
     }
 }

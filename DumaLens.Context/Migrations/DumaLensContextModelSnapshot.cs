@@ -300,7 +300,7 @@ namespace DumaLens.Context.Migrations
 
                     b.HasIndex("FactionPeriodId");
 
-                    b.HasIndex(new[] { "DeputyId" }, "IX_DeputyVote_DeputyId");
+                    b.HasIndex(new[] { "DeputyId", "Result", "VoteId" }, "IX_DeputyVote_DeputyId");
 
                     b.HasIndex(new[] { "VoteId", "FactionPeriodId" }, "IX_DeputyVote_VoteId_FactionPeriodId");
 
@@ -1643,6 +1643,9 @@ namespace DumaLens.Context.Migrations
                     b.HasIndex(new[] { "ConvocationId" }, "IX_Vote_ConvocationId");
 
                     b.HasIndex(new[] { "ConvocationId", "VotedAt" }, "IX_Vote_ConvocationId_VotedAt");
+
+                    b.HasIndex(new[] { "RowId" }, "IX_Vote_Deleted_RowId")
+                        .HasFilter("\"DeletedAt\" IS NOT NULL");
 
                     b.HasIndex(new[] { "SiteId" }, "IX_Vote_SiteId")
                         .IsUnique()
