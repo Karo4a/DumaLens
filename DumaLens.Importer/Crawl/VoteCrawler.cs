@@ -93,6 +93,8 @@ public sealed class VoteCrawler
         var summary = new CrawlSummary();
         var baseUrl = options.BaseUrl.TrimEnd('/');
 
+        // Миграции могут создавать индексы на десятках миллионов строк — дефолтные 30 с Npgsql не годятся
+        context.Database.SetCommandTimeout(TimeSpan.FromMinutes(30));
         await context.Database.MigrateAsync(cancellationToken);
         await catalog.Load(cancellationToken);
         await robots.LoadAsync(baseUrl, cancellationToken);

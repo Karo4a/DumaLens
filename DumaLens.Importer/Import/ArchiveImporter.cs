@@ -105,6 +105,8 @@ public sealed class ArchiveImporter
         var summary = new ImportSummary();
         var startedAt = dateTimeProvider.UtcNow();
 
+        // Миграции могут создавать индексы на десятках миллионов строк — дефолтные 30 с Npgsql не годятся
+        context.Database.SetCommandTimeout(TimeSpan.FromMinutes(30));
         await context.Database.MigrateAsync(cancellationToken);
         await catalog.Load(cancellationToken);
         await schema.PrepareAsync(options.Bulk, cancellationToken);
