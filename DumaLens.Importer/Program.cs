@@ -171,6 +171,33 @@ internal class Program
         });
         root.AddCommand(recalcCommand);
 
+        var normalizeTitlesCommand = new Command("normalize-titles", "Очистка ведущих служебных маркеров «*»/«**» в заголовках голосований (идемпотентно; новые импорты уже пишут очищенный заголовок)");
+        normalizeTitlesCommand.SetHandler(async invocationContext =>
+        {
+            var cancellationToken = invocationContext.GetCancellationToken();
+            var connection = invocationContext.ParseResult.GetValueForOption(connectionOption);
+
+            try
+            {
+                var connectionString = ImporterHost.ResolveConnectionString(connection);
+                await using var provider = ImporterHost.BuildServiceProvider(connectionString, logFilePath: null);
+                var renormalizer = provider.GetRequiredService<TitleRenormalizer>();
+                var summary = await renormalizer.Run(cancellationToken);
+                Console.WriteLine($"Очищено заголовков: {summary.TitlesUpdated:N0} за {summary.Elapsed.TotalSeconds:F1} с");
+                invocationContext.ExitCode = 0;
+            }
+            catch (OperationCanceledException)
+            {
+                invocationContext.ExitCode = 1;
+            }
+            catch (Exception exception)
+            {
+                Console.Error.WriteLine($"Очистка заголовков завершилась ошибкой: {exception}");
+                invocationContext.ExitCode = 1;
+            }
+        });
+        root.AddCommand(normalizeTitlesCommand);
+
         var restoreSchemaCommand = new Command("restore-schema", "Довосстановление схемы потоковых таблиц (индексы, FK, триггеры) после аварийного завершения bulk-импорта — без повторного импорта данных");
         restoreSchemaCommand.SetHandler(async invocationContext =>
         {

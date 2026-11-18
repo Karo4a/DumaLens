@@ -30,7 +30,7 @@ public sealed partial class TitleNormalizer : ITitleNormalizer
     public NormalizedTitle Normalize(string title)
     {
         var cleaned = HtmlText.Clean(title);
-        var result = new NormalizedTitle { Title = cleaned };
+        var result = new NormalizedTitle { Title = LeadingMarkersRegex().Replace(cleaned, string.Empty) };
 
         var numberMatch = BillNumberRegex().Match(cleaned);
         if (numberMatch.Success)
@@ -164,6 +164,13 @@ public sealed partial class TitleNormalizer : ITitleNormalizer
 
     [GeneratedRegex(@"^(?:принят|одобрен)\s+(?:в|во)\s")]
     private static partial Regex HistoricalNoteRegex();
+
+    /// <summary>
+    /// Ведущие служебные маркеры сайта «*»/«**» (повторные голосования) и пробелы перед ними —
+    /// в очищенном заголовке не сохраняются (для разбора стадии уже снимались через TrimStart)
+    /// </summary>
+    [GeneratedRegex(@"^[\s*]+")]
+    private static partial Regex LeadingMarkersRegex();
 
     /// <summary>
     /// Специфичные стадии: возврат и таблицы поправок; приоритет паттерна над позицией в заголовке

@@ -69,6 +69,7 @@ public static class ImporterHost
         services.AddScoped<RobotsChecker>();
         services.AddScoped<VoteCrawler>();
         services.AddScoped<StatsRecalculator>();
+        services.AddScoped<TitleRenormalizer>();
         return services.BuildServiceProvider();
     }
 
