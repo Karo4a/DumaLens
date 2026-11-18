@@ -1,0 +1,13 @@
+﻿<button class="theme-toggle" @onclick="Toggle" title="Переключить светлую/тёмную тему" aria-label="Переключить тему">
+    <span aria-hidden="true">◐</span> Тема
+</button>
+
+@code {
+    [Inject]
+    private IJSRuntime JS { get; set; } = default!;
+
+    private async Task Toggle()
+    {
+        await JS.InvokeVoidAsync("dlTheme.toggle");
+    }
+}

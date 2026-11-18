@@ -1,0 +1,23 @@
+﻿<nav class="crumbs" aria-label="Хлебные крошки">
+    <a href="/">Главная</a>
+    @foreach (var item in Items)
+    {
+        <span>→</span>
+        @if (item.Href is null)
+        {
+            <span>@item.Text</span>
+        }
+        else
+        {
+            <a href="@item.Href">@item.Text</a>
+        }
+    }
+</nav>
+
+@code {
+    /// <summary>
+    /// Элементы хлебных крошек после «Главной»
+    /// </summary>
+    [Parameter]
+    public IReadOnlyList<BreadcrumbItem> Items { get; set; } = [];
+}

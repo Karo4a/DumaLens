@@ -1,10 +1,1 @@
-﻿.page {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-}
-
-main {
-    flex: 1;
-    padding: 1rem;
-}
+﻿/* Компоновка задаётся wwwroot/app.css (дизайн-токены,Docs/12-e8-ui.md). */
