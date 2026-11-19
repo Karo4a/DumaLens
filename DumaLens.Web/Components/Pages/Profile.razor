@@ -1,0 +1,35 @@
+﻿@page "/profile"
+@inject UserState UserState
+
+<PageTitle>Профиль — DumaLens</PageTitle>
+
+<ProtectedContent>
+    <div class="page-head">
+        <h1>Профиль</h1>
+    </div>
+
+    <div class="card profile-card">
+        <dl class="profile-fields">
+            <div><dt>Логин</dt><dd>@UserState.Login</dd></div>
+            <div><dt>Имя</dt><dd>@UserState.Name</dd></div>
+            <div><dt>Электронная почта</dt><dd>@(string.IsNullOrEmpty(UserState.Email) ? "—" : UserState.Email)</dd></div>
+            <div><dt>Роль</dt><dd><span class="badge">@RoleTitle(UserState.Role)</span></dd></div>
+        </dl>
+        @if (UserState.PasswordIsTemporary)
+        {
+            <div class="auth-info">У вас временный пароль — смените его при первой возможности.</div>
+        }
+        <a class="btn-primary" href="/change-password">Сменить пароль</a>
+    </div>
+</ProtectedContent>
+
+@code {
+    private static string RoleTitle(string? role)
+        => role switch
+        {
+            "Administrator" => "Администратор",
+            "Moderator" => "Модератор",
+            "User" => "Пользователь",
+            _ => role ?? "—",
+        };
+}

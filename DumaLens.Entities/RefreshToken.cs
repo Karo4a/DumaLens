@@ -25,6 +25,11 @@ public class RefreshToken : IEntityWithId
     public string TokenHash { get; set; } = string.Empty;
 
     /// <summary>
+    /// Метка безопасности пользователя на момент выпуска токена (сверяется при обновлении, ADR-13)
+    /// </summary>
+    public Guid SecurityStamp { get; set; }
+
+    /// <summary>
     /// Дата и время истечения токена
     /// </summary>
     public DateTimeOffset ExpiresAt { get; set; }

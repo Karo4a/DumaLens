@@ -72,6 +72,11 @@ public class User : DbBaseEntity
     public int LoginAttemptFailedCount { get; set; }
 
     /// <summary>
+    /// Дата и время последней неудачной попытки входа (окно блокировки, 07-security.md §2.2)
+    /// </summary>
+    public DateTimeOffset? LastFailedLoginAt { get; set; }
+
+    /// <summary>
     /// Заметка администратора
     /// </summary>
     public string? Note { get; set; }

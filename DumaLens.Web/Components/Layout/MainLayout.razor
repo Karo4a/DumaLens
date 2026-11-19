@@ -1,7 +1,23 @@
 ﻿@inherits LayoutComponentBase
+@using DumaLens.Web.Services
+@inject UserStateInitializer UserStateInitializer
 
 <NavMenu />
 <div class="wrap">
     @Body
     <footer class="app-footer">DumaLens — аналитика голосований Государственной Думы. Данные: архив и сайт vote.duma.gov.ru.</footer>
 </div>
+
+@code {
+    /// <summary>
+    /// Восстановление состояния пользователя после подключения цепи
+    /// (ProtectedLocalStorage доступен только в интерактивном рендере)
+    /// </summary>
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await UserStateInitializer.InitializeAsync();
+        }
+    }
+}

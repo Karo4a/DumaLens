@@ -1,0 +1,147 @@
+﻿@page "/admin/users"
+
+<PageTitle>Пользователи — DumaLens</PageTitle>
+
+<ProtectedContent Roles="Administrator">
+<div class="page-head">
+    <h1>Пользователи</h1>
+    <p class="lead">Управление учётными записями и ролями. Новый пользователь получает временный пароль и обязан сменить его при первом входе.</p>
+</div>
+
+@if (error != null)
+{
+    <ErrorBlock Message="@error" />
+}
+
+@if (resetResult != null)
+{
+    <div class="auth-info reset-result">
+        Временный пароль для <b>@resetResult.Value.Login</b>: <code>@resetResult.Value.Password</code>
+        — передайте пользователю; пароль показывается один раз.
+        <button class="btn-link" @onclick="() => resetResult = null">Скрыть</button>
+    </div>
+}
+
+<div class="card user-create">
+    <div class="section-title">Новый пользователь</div>
+    <form @onsubmit="CreateAsync" @onsubmit:preventDefault>
+        <div class="user-form-grid">
+            <label class="field">
+                <span>Логин</span>
+                <input class="ctl" @bind="createLogin" @bind:event="oninput" autocomplete="off" />
+            </label>
+            <label class="field">
+                <span>Имя</span>
+                <input class="ctl" @bind="createName" @bind:event="oninput" autocomplete="off" />
+            </label>
+            <label class="field">
+                <span>Электронная почта (необязательно)</span>
+                <input class="ctl" type="email" @bind="createEmail" @bind:event="oninput" autocomplete="off" />
+            </label>
+            <label class="field">
+                <span>Роль</span>
+                <select class="ctl" @bind="createRole">
+                    <option value="User">Пользователь</option>
+                    <option value="Moderator">Модератор</option>
+                    <option value="Administrator">Администратор</option>
+                </select>
+            </label>
+            <label class="field">
+                <span>Временный пароль (не менее 8 символов)</span>
+                <input class="ctl" @bind="createPassword" @bind:event="oninput" autocomplete="new-password" />
+            </label>
+        </div>
+        <button class="btn-primary" type="submit" disabled="@busy">@(busy ? "Сохранение…" : "Создать")</button>
+    </form>
+</div>
+
+@if (loading)
+{
+    <LoadingBlock />
+}
+else
+{
+    <div class="results-count">Всего пользователей: @UiFormat.Number(totalCount)</div>
+    <table class="matrix users-table">
+        <thead>
+            <tr>
+                <th>Логин</th>
+                <th>Имя</th>
+                <th>Роль</th>
+                <th>Статус</th>
+                <th>Создан</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var user in items)
+            {
+                <tr>
+                    <td>@user.Login</td>
+                    <td>@user.Name</td>
+                    <td><span class="badge">@RoleTitle(user.Role)</span></td>
+                    <td>
+                        @if (user.Blocked)
+                        {
+                            <span class="badge badge-blocked">Заблокирован</span>
+                        }
+                        else if (user.PasswordIsTemporary)
+                        {
+                            <span class="badge badge-temp">Временный пароль</span>
+                        }
+                        else
+                        {
+                            <span class="muted">Активен</span>
+                        }
+                    </td>
+                    <td class="num">@UiFormat.Date(user.CreatedAt)</td>
+                    <td class="user-actions">
+                        <button class="btn-link" @onclick="() => StartEdit(user)">Изменить</button>
+                        <button class="btn-link" @onclick="() => ResetPasswordAsync(user)" disabled="@busy">Сбросить пароль</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <Pager Page="page" TotalCount="totalCount" PageSize="PageSize" OnPageChanged="GoToPageAsync" />
+}
+
+@if (editUser != null)
+{
+    <div class="card user-edit">
+        <div class="section-title">Изменение: @editUser.Login</div>
+        <form @onsubmit="SaveEditAsync" @onsubmit:preventDefault>
+            <div class="user-form-grid">
+                <label class="field">
+                    <span>Имя</span>
+                    <input class="ctl" @bind="editName" @bind:event="oninput" />
+                </label>
+                <label class="field">
+                    <span>Электронная почта (необязательно)</span>
+                    <input class="ctl" type="email" @bind="editEmail" @bind:event="oninput" />
+                </label>
+                <label class="field">
+                    <span>Роль</span>
+                    <select class="ctl" @bind="editRole">
+                        <option value="User">Пользователь</option>
+                        <option value="Moderator">Модератор</option>
+                        <option value="Administrator">Администратор</option>
+                    </select>
+                </label>
+                <label class="field field-check">
+                    <span>Блокировка</span>
+                    <label class="check-line"><input type="checkbox" @bind="editBlocked" /> Заблокировать вход и сессии</label>
+                </label>
+                <label class="field">
+                    <span>Заметка администратора</span>
+                    <input class="ctl" @bind="editNote" @bind:event="oninput" />
+                </label>
+            </div>
+            <div class="user-edit-actions">
+                <button class="btn-primary" type="submit" disabled="@busy">@(busy ? "Сохранение…" : "Сохранить")</button>
+                <button class="btn-ghost" type="button" @onclick="CancelEdit">Отмена</button>
+            </div>
+        </form>
+    </div>
+}
+</ProtectedContent>

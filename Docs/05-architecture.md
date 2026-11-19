@@ -57,7 +57,7 @@ DumaLens.sln
 │                                      (app.css — дизайн-токены светлой/тёмной тем, theme.js — переключатель тем);
 │                                      обращается к Api только по HTTP через DumaLens.Api.Client; стиль и
 │                                      компоновка — Docs/12-e8-ui.md. Auth-сервисы (ClientTokenStore, UserState,
-│                                      AuthDelegatingHandler) добавляются на Э9
+│                                      AuthDelegatingHandler, ProtectedContent) добавлены на Э9 (Docs/13-e9-auth.md)
 │
 ├─ DumaLens.Context.Tests           — база тестов: DumaLensContextInMemory + Prepare*-хелперы
 ├─ DumaLens.Repositories.Tests      — репозитории (InMemory)
@@ -187,13 +187,13 @@ ImportQuarantine — журнал аномалий импорта
 
 Теги/рейтинги (v1.1/v1.2): `Tags` (slug unique, title, category, sentiment, description), `VoteTags`/`BillTags` (PK vote/bill+tag, source, status, assignedBy, createdAt), `TagRules` (tagId, pattern, field, enabled), `BillImportances` (billId PK, expertScore, publicScore, finalScore, votesCount), `ImportanceVotes` (PK bill+user, score 1–5).
 
-Пользователи и роли (база закладывается на Э1, включается на Э9; подробно — [07-security.md](07-security.md)):
+Пользователи и роли (база заложена на Э1, включена на Э9; подробно — [07-security.md](07-security.md), реализация — [13-e9-auth.md](13-e9-auth.md)):
 
 | Таблица | Ключевые поля | Индексы |
 |---|---|---|
-| `Users` | `Login` (+ `LoginLowerCase`), `Email` (+ `EmailLowerCase`), `Name`, `PasswordHash`, `PasswordSalt`, `PasswordIsTemporary`, `SecurityStamp`, `RoleId`, `Blocked`, `LoginAttemptFailedCount`, `Note`, аудит | unique `LoginLowerCase`, unique `EmailLowerCase`; индекс `RoleId` |
+| `Users` | `Login` (+ `LoginLowerCase`), `Email` (+ `EmailLowerCase`), `Name`, `PasswordHash`, `PasswordSalt`, `PasswordIsTemporary`, `SecurityStamp`, `RoleId`, `Blocked`, `LoginAttemptFailedCount`, `LastFailedLoginAt`, `Note`, аудит | unique `LoginLowerCase` (фильтр `DeletedAt IS NULL`), unique `EmailLowerCase` (фильтр `DeletedAt IS NULL AND Email <> ''`); индекс `RoleId` |
 | `Roles` | `Name` (User/Moderator/Administrator), `Description` | unique `Name` |
-| `RefreshTokens` | `UserId`, `TokenHash`, `ExpiresAt`, `CreatedAt`, `RevokedAt` (ротация: старый отзывается при выпуске нового) | индекс `UserId`; unique `TokenHash` |
+| `RefreshTokens` | `UserId`, `TokenHash`, `SecurityStamp`, `ExpiresAt`, `CreatedAt`, `RevokedAt` (ротация: старый отзывается при выпуске нового) | unique `TokenHash`; unique `UserId` с фильтром `RevokedAt IS NULL` (один активный токен) |
 
 Модель ролей — **одна роль на пользователя** (FK `Users.RoleId`), как в DocumentGenerator master (`UserRole`-справочник + seed `UserRolesDefault` с фиксированными GUID). Иерархия прав: Пользователь ⊂ Модератор ⊂ Администратор; проверяется политиками/`RoleHelper`, не размазанными `if`. Множественные роли на пользователя — отложено (при необходимости заменяется на связь `*──*` без слома API).
 
@@ -247,7 +247,7 @@ AND EXISTS (SELECT 1 FROM "VoteFactionStats" s
 - **Аутентификация**: JWT access + refresh (HttpOnly-cookie для браузерного потока по образцу Specular; для Blazor Server — токен-стор на сервере, как DG). Пароли — **PBKDF2 + соль** (как оба эталона, но ≥ 100 000 итераций: в эталонах `MaximumIterations = 6` — это слабо, осознанное отступление, ADR-12).
 - **Отзыв сессий**: `SecurityStamp` пользователя в клеймах + проверка при refresh (Specular); refresh-токены хранятся в БД с ротацией.
 - **Авторизация**: `[Authorize(Roles = "Administrator")]` / политики иерархии на эндпоинтах Api; `AuthorizeView` в Web. Публичные эндпоинты поиска/карточек — `[AllowAnonymous]`.
-- **ASP.NET Core Identity не используется** — своя схема по эталонам (ADR-11). База закладывается на Э1 (сущности+seed), включается на Э9 до тегов (v1.1), чтобы ФТ-41/ФТ-51 опирались на готовую систему.
+- **ASP.NET Core Identity не используется** — своя схема по эталонам (ADR-11). База заложена на Э1 (сущности+seed), включена на Э9 до тегов (v1.1), чтобы ФТ-41/ФТ-51 опирались на готовую систему.
 
 ## 5. Развёртывание
 

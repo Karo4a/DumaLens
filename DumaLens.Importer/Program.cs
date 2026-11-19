@@ -1,7 +1,12 @@
-﻿using DumaLens.Importer.Crawl;
+﻿using DumaLens.Context;
+using DumaLens.Importer.Crawl;
 using DumaLens.Importer.Import;
 using DumaLens.Importer.Stats;
 using DumaLens.Importer.Verify;
+using DumaLens.Services.Auth;
+using DumaLens.Services.Contracts;
+using DumaLens.Services.Contracts.Models;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System.CommandLine;
 
@@ -330,6 +335,58 @@ internal class Program
             }
         });
         root.AddCommand(crawlCommand);
+
+        var adminLoginOption = new Option<string>("--login", "Логин администратора") { IsRequired = true };
+        var adminNameOption = new Option<string>("--name", "Отображаемое имя") { IsRequired = true };
+        var adminEmailOption = new Option<string?>("--email", "Электронная почта (необязательно)");
+        var adminPasswordOption = new Option<string?>("--password", "Временный пароль (по умолчанию генерируется случайно)");
+        var createAdminCommand = new Command("create-admin", "Создать администратора: временный пароль, смена обязательна при первом входе (Э9)");
+        createAdminCommand.AddOption(adminLoginOption);
+        createAdminCommand.AddOption(adminNameOption);
+        createAdminCommand.AddOption(adminEmailOption);
+        createAdminCommand.AddOption(adminPasswordOption);
+        createAdminCommand.SetHandler(async invocationContext =>
+        {
+            var cancellationToken = invocationContext.GetCancellationToken();
+            var login = invocationContext.ParseResult.GetValueForOption(adminLoginOption)!;
+            var name = invocationContext.ParseResult.GetValueForOption(adminNameOption)!;
+            var email = invocationContext.ParseResult.GetValueForOption(adminEmailOption);
+            var password = invocationContext.ParseResult.GetValueForOption(adminPasswordOption);
+            var connection = invocationContext.ParseResult.GetValueForOption(connectionOption);
+
+            try
+            {
+                var connectionString = ImporterHost.ResolveConnectionString(connection);
+                await using var provider = ImporterHost.BuildServiceProvider(connectionString, logFilePath: null);
+                await using var scope = provider.CreateAsyncScope();
+                var context = scope.ServiceProvider.GetRequiredService<DumaLensContext>();
+                await context.Database.MigrateAsync(cancellationToken);
+                var userService = scope.ServiceProvider.GetRequiredService<IUserService>();
+                var temporaryPassword = password ?? SecurityHelper.GenerateTemporaryPassword();
+                var user = await userService.Create(new CreateUserModel
+                {
+                    Login = login,
+                    Name = name,
+                    Email = email,
+                    Role = "Administrator",
+                    Password = temporaryPassword,
+                }, cancellationToken);
+                Console.WriteLine($"Администратор создан: {user.Login} ({user.Name})");
+                Console.WriteLine($"Временный пароль: {temporaryPassword}");
+                Console.WriteLine("Смена пароля обязательна при первом входе.");
+                invocationContext.ExitCode = 0;
+            }
+            catch (OperationCanceledException)
+            {
+                invocationContext.ExitCode = 1;
+            }
+            catch (Exception exception)
+            {
+                Console.Error.WriteLine($"create-admin: {exception.Message}");
+                invocationContext.ExitCode = 1;
+            }
+        });
+        root.AddCommand(createAdminCommand);
 
         return await root.InvokeAsync(args);
     }

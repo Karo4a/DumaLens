@@ -1,0 +1,45 @@
+﻿@using DumaLens.Web.Services
+@inject UserState UserState
+@inject NavigationManager Navigation
+@implements IDisposable
+
+@if (!UserState.IsInitialized)
+{
+    <LoadingBlock />
+}
+
+@code {
+    /// <summary>
+    /// Перенаправляет анонимного пользователя на страницу входа с возвратом на исходный адрес.
+    /// Во время пререндера и до восстановления состояния показывает загрузку (без редиректа).
+    /// </summary>
+    protected override void OnInitialized()
+        => UserState.OnChange += OnUserStateChanged;
+
+    /// <inheritdoc cref="IDisposable.Dispose"/>
+    public void Dispose()
+        => UserState.OnChange -= OnUserStateChanged;
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender && UserState.IsInitialized && !UserState.IsAuthenticated)
+        {
+            NavigateToLogin();
+        }
+    }
+
+    private void OnUserStateChanged()
+    {
+        if (UserState.IsInitialized && !UserState.IsAuthenticated)
+        {
+            NavigateToLogin();
+        }
+    }
+
+    private void NavigateToLogin()
+    {
+        var uri = new Uri(Navigation.Uri);
+        var returnUrl = Uri.EscapeDataString(uri.PathAndQuery);
+        Navigation.NavigateTo($"/login?returnUrl={returnUrl}");
+    }
+}

@@ -1,4 +1,10 @@
-﻿<header class="navbar">
+﻿@using DumaLens.Api.Client
+@using DumaLens.Web.Services
+@inject IAuthClient AuthClient
+@inject IClientTokenStore TokenStore
+@inject NavigationManager Navigation
+
+<header class="navbar">
     <div class="nav-inner">
         <a class="brand" href="/"><span class="brand-mark">DL</span> DumaLens</a>
         <nav class="nav-links" aria-label="Основная навигация">
@@ -9,6 +15,35 @@
         </nav>
         <div class="nav-right">
             <ThemeToggle />
+            <AuthorizeView>
+                <Authorized>
+                    <NavLink class="nav-link" href="/profile" Match="NavLinkMatch.All">@(context.User.Identity?.Name ?? "Профиль")</NavLink>
+                    <AuthorizeView Roles="Administrator" Context="adminContext">
+                        <NavLink class="nav-link" href="/admin/users" Match="NavLinkMatch.All">Пользователи</NavLink>
+                    </AuthorizeView>
+                    <button class="nav-link nav-logout" @onclick="LogoutAsync">Выйти</button>
+                </Authorized>
+                <NotAuthorized>
+                    <NavLink class="nav-link" href="/login" Match="NavLinkMatch.All">Войти</NavLink>
+                </NotAuthorized>
+            </AuthorizeView>
         </div>
     </div>
 </header>
+
+@code {
+    private async Task LogoutAsync()
+    {
+        try
+        {
+            await AuthClient.LogoutAsync();
+        }
+        catch (ApiException)
+        {
+            // Выход выполняется локально даже при недоступном Api
+        }
+        await TokenStore.ClearAsync();
+        // Полная перезагрузка: цепь сбрасывается без гонки редиректов ProtectedContent
+        Navigation.NavigateTo("/", forceLoad: true);
+    }
+}

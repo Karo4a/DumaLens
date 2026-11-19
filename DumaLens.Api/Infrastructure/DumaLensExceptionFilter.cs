@@ -31,6 +31,12 @@ public class DumaLensExceptionFilter : IExceptionFilter
             case DumaLensNotFoundException ex:
                 SetDataToContext(new NotFoundObjectResult(new ApiExceptionDetail(ex.Message)), context);
                 break;
+            case DumaLensUnauthorizedException ex:
+                SetDataToContext(new ObjectResult(new ApiExceptionDetail(ex.Message))
+                {
+                    StatusCode = StatusCodes.Status401Unauthorized,
+                }, context);
+                break;
             case DumaLensValidationException ex:
                 SetDataToContext(new ObjectResult(new ApiValidationExceptionDetail
                 {

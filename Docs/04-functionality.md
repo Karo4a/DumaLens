@@ -235,11 +235,12 @@ dumalens crawl --convocation 9
 dumalens verify [--report <файл>]
 dumalens recalc-stats
 dumalens normalize-titles
+dumalens create-admin --login <логин> --name <имя> [--email <почта>] [--password <пароль>]
 ```
 
-### 5.4. Аутентификация и пользователи (база, Э9)
+### 5.4. Аутентификация и пользователи (база, Э9 — реализовано)
 
-Полная спецификация — [07-security.md](07-security.md). Контракт:
+Полная спецификация — [07-security.md](07-security.md); реализация — [13-e9-auth.md](13-e9-auth.md). Контракт:
 
 | Эндпоинт | Доступ | Назначение |
 |---|---|---|

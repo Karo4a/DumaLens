@@ -50,7 +50,8 @@ public class UserConfiguration : IEntityTypeConfiguration<User>, IEntityConfigur
             .HasFilter($"\"{nameof(User.DeletedAt)}\" IS NULL");
         builder.HasIndex(x => x.EmailLowerCase, $"IX_{nameof(User)}_{nameof(User.EmailLowerCase)}")
             .IsUnique()
-            .HasFilter($"\"{nameof(User.DeletedAt)}\" IS NULL");
+            // Электронная почта необязательна: пустые значения не участвуют в уникальности
+            .HasFilter($"\"{nameof(User.DeletedAt)}\" IS NULL AND \"{nameof(User.Email)}\" <> ''");
         builder.HasIndex(x => x.RoleId, $"IX_{nameof(User)}_{nameof(User.RoleId)}");
     }
 }

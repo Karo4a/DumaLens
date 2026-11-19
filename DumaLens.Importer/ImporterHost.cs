@@ -37,6 +37,13 @@ public static class ImporterHost
         services.AddScoped<IWriter>(provider => provider.GetRequiredService<DumaLensContext>());
         services.AddScoped<IUnitOfWork>(provider => provider.GetRequiredService<DumaLensContext>());
         services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
+        // Настройки auth по умолчанию: CLI create-admin использует хэширование паролей (Э9)
+        services.AddSingleton(new DumaLens.Services.Contracts.AuthOptions());
+        services.AddSingleton<AutoMapper.IMapper>(_ =>
+        {
+            var mapConfig = new AutoMapper.MapperConfiguration(cfg => cfg.AddProfile<DumaLens.Services.Infrastructure.ServiceProfile>());
+            return mapConfig.CreateMapper();
+        });
         services.RegisterAssemblyInterfacesAssignableTo<IRepositoryAnchor>(ServiceLifetime.Scoped);
         services.RegisterAssemblyInterfacesAssignableTo<DumaLens.Services.IServiceAnchor>(ServiceLifetime.Scoped);
         services.AddSingleton(provider => new ImportLog(provider.GetRequiredService<IDateTimeProvider>(), logFilePath));

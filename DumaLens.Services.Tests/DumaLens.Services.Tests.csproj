@@ -1,5 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" />
+    <PackageReference Include="Xunit.SkippableFact" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\DumaLens.Entities\DumaLens.Entities.csproj" />
     <ProjectReference Include="..\DumaLens.Entities.Contracts\DumaLens.Entities.Contracts.csproj" />
     <ProjectReference Include="..\DumaLens.Services\DumaLens.Services.csproj" />
@@ -8,5 +13,6 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="..\DumaLens.Parsing.Tests\Fixtures\json\archive_*.json" Link="Fixtures\json\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="appsettings.integration.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

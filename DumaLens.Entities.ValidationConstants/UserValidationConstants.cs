@@ -34,4 +34,34 @@ public static class UserValidationConstants
     /// Максимальная длина заметки администратора
     /// </summary>
     public const int NoteMaxLength = 1024;
+
+    /// <summary>
+    /// Минимальная длина пароля (07-security.md §2.2)
+    /// </summary>
+    public const int PasswordMinLength = 8;
+
+    /// <summary>
+    /// Максимальная длина пароля (ограничение вычислительной нагрузки PBKDF2)
+    /// </summary>
+    public const int PasswordMaxLength = 128;
+
+    /// <summary>
+    /// Минимальный номер страницы списка пользователей
+    /// </summary>
+    public const int PageMin = 1;
+
+    /// <summary>
+    /// Минимальный размер страницы списка пользователей
+    /// </summary>
+    public const int PageSizeMin = 1;
+
+    /// <summary>
+    /// Максимальный размер страницы списка пользователей
+    /// </summary>
+    public const int PageSizeMax = 100;
+
+    /// <summary>
+    /// Максимальная длина refresh-токена в запросе (base64, 256 бит)
+    /// </summary>
+    public const int RefreshTokenMaxLength = 256;
 }

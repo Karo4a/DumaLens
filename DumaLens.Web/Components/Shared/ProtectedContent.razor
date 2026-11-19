@@ -1,0 +1,39 @@
+﻿@inject UserState UserState
+
+<AuthorizeView Roles="@Roles">
+    <Authorized>
+        @ChildContent
+    </Authorized>
+    <NotAuthorized>
+        @if (!UserState.IsInitialized)
+        {
+            <LoadingBlock />
+        }
+        else if (UserState.IsAuthenticated)
+        {
+            <div class="state-block error" role="alert">Недостаточно прав для просмотра этой страницы.</div>
+        }
+        else
+        {
+            <RedirectToLogin />
+        }
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    /// <summary>
+    /// Защищённое содержимое страницы (механика DocumentGenerator.Web + AuthorizeView).
+    /// До восстановления состояния показывается загрузка; анонимный пользователь
+    /// перенаправляется на вход, аутентифицированный без нужной роли видит отказ.
+    /// Атрибут [Authorize] на страницах не используется: токен хранится в браузере
+    /// (ProtectedLocalStorage), HTTP-запрос страницы учётных данных не несёт.
+    /// </summary>
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    /// <summary>
+    /// Допустимые роли через запятую; null — любой аутентифицированный пользователь
+    /// </summary>
+    [Parameter]
+    public string? Roles { get; set; }
+}

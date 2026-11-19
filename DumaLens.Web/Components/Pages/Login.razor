@@ -1,0 +1,115 @@
+﻿@page "/login"
+@inject IAuthClient AuthClient
+@inject IClientTokenStore TokenStore
+@inject UserState UserState
+@inject NavigationManager Navigation
+
+<PageTitle>Вход — DumaLens</PageTitle>
+
+<div class="page-head">
+    <h1>Вход</h1>
+    <p class="lead">Войдите, чтобы управлять профилем и доступом. Публичные данные доступны без входа.</p>
+</div>
+
+<div class="auth-card card">
+    @if (info != null)
+    {
+        <div class="auth-info">@info</div>
+    }
+    <form @onsubmit="LoginAsync" @onsubmit:preventDefault>
+        <label class="field">
+            <span>Логин</span>
+            <input class="ctl" @bind="login" @bind:event="oninput" autocomplete="username" autofocus />
+        </label>
+        <label class="field">
+            <span>Пароль</span>
+            <input class="ctl" type="password" @bind="password" @bind:event="oninput" autocomplete="current-password" />
+        </label>
+        @if (error != null)
+        {
+            <div class="auth-error" role="alert">@error</div>
+        }
+        <button class="btn-primary auth-submit" type="submit" disabled="@loading">@(loading ? "Вход…" : "Войти")</button>
+    </form>
+</div>
+
+@code {
+    private string login = string.Empty;
+    private string password = string.Empty;
+    private string? error;
+    private string? info;
+    private bool loading;
+
+    [SupplyParameterFromQuery(Name = "returnUrl")]
+    private string? ReturnUrl { get; set; }
+
+    [SupplyParameterFromQuery(Name = "message")]
+    private string? Message { get; set; }
+
+    /// <summary>
+    /// Сообщение после смены пароля; уже вошедшего пользователя возвращаем на исходную страницу
+    /// </summary>
+    protected override void OnInitialized()
+    {
+        if (Message == "password-changed")
+        {
+            info = "Пароль изменён. Войдите с новым паролем.";
+        }
+    }
+
+    /// <inheritdoc cref="ComponentBase.OnAfterRenderAsync(bool)"/>
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender && UserState.IsAuthenticated)
+        {
+            Navigation.NavigateTo(SafeReturnUrl());
+        }
+    }
+
+    private async Task LoginAsync()
+    {
+        if (loading)
+        {
+            return;
+        }
+        loading = true;
+        error = null;
+        try
+        {
+            var result = await AuthClient.LoginAsync(new LoginRequestApiModel
+            {
+                Login = login,
+                Password = password,
+            });
+            await TokenStore.SetTokensAsync(result.AccessToken, result.RefreshToken);
+            UserState.SetFrom(result.User.Id, result.User.Login, result.User.Name, result.User.Email, result.User.Role, result.User.PasswordIsTemporary);
+            if (result.User.PasswordIsTemporary)
+            {
+                Navigation.NavigateTo("/change-password");
+            }
+            else
+            {
+                Navigation.NavigateTo(SafeReturnUrl());
+            }
+        }
+        catch (ApiException exception)
+        {
+            error = exception.StatusCode == 401
+                ? "Неверный логин или пароль"
+                : ApiErrorText.Describe(exception);
+        }
+        catch (HttpRequestException)
+        {
+            error = "API недоступен. Повторите позже.";
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private string SafeReturnUrl()
+        => !string.IsNullOrEmpty(ReturnUrl) && ReturnUrl.StartsWith('/') && !ReturnUrl.StartsWith("//")
+            ? ReturnUrl
+            : "/";
+}

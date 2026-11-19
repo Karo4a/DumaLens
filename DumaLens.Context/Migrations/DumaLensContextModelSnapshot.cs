@@ -1384,6 +1384,9 @@ namespace DumaLens.Context.Migrations
                     b.Property<DateTimeOffset?>("RevokedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Guid>("SecurityStamp")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("TokenHash")
                         .IsRequired()
                         .HasMaxLength(44)
@@ -1428,6 +1431,9 @@ namespace DumaLens.Context.Migrations
                         .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
+
+                    b.Property<DateTimeOffset?>("LastFailedLoginAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Login")
                         .IsRequired()
@@ -1477,7 +1483,7 @@ namespace DumaLens.Context.Migrations
 
                     b.HasIndex(new[] { "EmailLowerCase" }, "IX_User_EmailLowerCase")
                         .IsUnique()
-                        .HasFilter("\"DeletedAt\" IS NULL");
+                        .HasFilter("\"DeletedAt\" IS NULL AND \"Email\" <> ''");
 
                     b.HasIndex(new[] { "LoginLowerCase" }, "IX_User_LoginLowerCase")
                         .IsUnique()

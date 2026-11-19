@@ -189,3 +189,34 @@ select.ctl option { background:var(--surface); color:var(--text); }
 .example-queries a:hover { border-color: var(--accent); text-decoration: none; }
 .section-title { font-size: 18px; margin: 22px 0 10px; }
 .home-hero { max-width: 760px; }
+
+/* ===== auth и админ-панель (Э9) ===== */
+.nav-right { display: flex; align-items: center; gap: 10px; }
+.nav-logout { background: none; border: 0; cursor: pointer; font: inherit; }
+.auth-card { max-width: 420px; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+.auth-card form { display: flex; flex-direction: column; gap: 12px; }
+.auth-submit { width: 100%; }
+.auth-error { color: var(--r-against); font-size: 13px; }
+.auth-info { font-size: 13px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 12px; }
+.reset-result { margin-bottom: 14px; }
+.reset-result code { font-weight: 700; font-size: 14px; }
+.profile-card { max-width: 560px; padding: 20px; display: flex; flex-direction: column; gap: 14px; align-items: flex-start; }
+.profile-fields { display: flex; flex-direction: column; gap: 8px; margin: 0; width: 100%; }
+.profile-fields div { display: flex; gap: 12px; }
+.profile-fields dt { width: 180px; color: var(--muted); flex: none; }
+.profile-fields dd { margin: 0; }
+.badge-blocked { color: var(--r-against); background: var(--r-against-bg); }
+.badge-temp { color: var(--r-abstain); background: var(--r-abstain-bg); }
+.user-create, .user-edit { padding: 16px 18px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 12px; }
+.user-create .section-title, .user-edit .section-title { margin: 0; }
+.user-create form, .user-edit form { display: flex; flex-direction: column; gap: 12px; align-items: flex-start; }
+.user-form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px 16px; width: 100%; }
+.field-check .check-line { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text); }
+.user-edit-actions { display: flex; gap: 10px; }
+.users-table { margin-bottom: 14px; }
+.users-table .num { width: auto; }
+.user-actions { white-space: nowrap; display: flex; gap: 12px; }
+@media (max-width: 760px) {
+  .profile-fields div { flex-direction: column; gap: 2px; }
+  .profile-fields dt { width: auto; }
+}

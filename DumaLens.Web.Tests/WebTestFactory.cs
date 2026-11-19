@@ -44,6 +44,16 @@ public sealed class WebTestFactory : WebApplicationFactory<Program>
     public Mock<IStatsClient> Stats { get; } = new();
 
     /// <summary>
+    /// Мок клиента аутентификации
+    /// </summary>
+    public Mock<IAuthClient> Auth { get; } = new();
+
+    /// <summary>
+    /// Мок клиента пользователей
+    /// </summary>
+    public Mock<IUsersClient> Users { get; } = new();
+
+    /// <summary>
     /// Подмена клиентов Api моками в контейнере хоста
     /// </summary>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -56,12 +66,16 @@ public sealed class WebTestFactory : WebApplicationFactory<Program>
             services.RemoveAll<IDeputiesClient>();
             services.RemoveAll<IConvocationsClient>();
             services.RemoveAll<IStatsClient>();
+            services.RemoveAll<IAuthClient>();
+            services.RemoveAll<IUsersClient>();
             services.AddSingleton(Votes.Object);
             services.AddSingleton(Bills.Object);
             services.AddSingleton(Factions.Object);
             services.AddSingleton(Deputies.Object);
             services.AddSingleton(Convocations.Object);
             services.AddSingleton(Stats.Object);
+            services.AddSingleton(Auth.Object);
+            services.AddSingleton(Users.Object);
         });
     }
 }

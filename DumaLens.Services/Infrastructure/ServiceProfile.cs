@@ -50,5 +50,22 @@ public class ServiceProfile : Profile
             .ForMember(destination => destination.TotalBills, option => option.MapFrom(source => source.BillCount))
             .ForMember(destination => destination.DateFrom, option => option.MapFrom(source => source.DateFrom.HasValue ? DateOnly.FromDateTime(source.DateFrom.Value.DateTime) : (DateOnly?)null))
             .ForMember(destination => destination.DateTo, option => option.MapFrom(source => source.DateTo.HasValue ? DateOnly.FromDateTime(source.DateTo.Value.DateTime) : (DateOnly?)null));
+        // Auth (Э9): проекции чтения и обратный маппинг полной проекции в сущность для записи (паттерн DG master)
+        CreateMap<UserDbModel, UserProfileModel>()
+            .ForMember(destination => destination.Role, option => option.MapFrom(source => source.Role.ToString()));
+        CreateMap<UserDbModel, User>()
+            .ForMember(destination => destination.LoginLowerCase, option => option.MapFrom(source => source.Login.ToLowerInvariant()))
+            .ForMember(destination => destination.EmailLowerCase, option => option.MapFrom(source => source.Email.ToLowerInvariant()))
+            .ForMember(destination => destination.Role, option => option.Ignore())
+            .ForMember(destination => destination.UpdatedAt, option => option.Ignore())
+            .ForMember(destination => destination.DeletedAt, option => option.Ignore());
+        CreateMap<User, UserListItemModel>()
+            .ForMember(destination => destination.Role, option => option.MapFrom(source => source.Role.Role.ToString()));
+        CreateMap<UserDbModel, UserListItemModel>()
+            .ForMember(destination => destination.Role, option => option.MapFrom(source => source.Role.ToString()));
+        CreateMap<UserListItemDbModel, UserListItemModel>()
+            .ForMember(destination => destination.Role, option => option.MapFrom(source => source.Role.ToString()));
+        CreateMap<UserPageDbModel, UserPageModel>();
+        CreateMap<RefreshTokenDbModel, RefreshToken>();
     }
 }

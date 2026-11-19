@@ -22,6 +22,8 @@ public class RefreshTokenConfiguration : IEntityTypeConfiguration<RefreshToken>,
         builder.Property(x => x.TokenHash)
             .HasMaxLength(RefreshTokenValidationConstants.TokenHashMaxLength)
             .IsRequired();
+        builder.Property(x => x.SecurityStamp)
+            .IsRequired();
 
         builder.HasIndex(x => x.TokenHash, $"IX_{nameof(RefreshToken)}_{nameof(RefreshToken.TokenHash)}")
             .IsUnique();

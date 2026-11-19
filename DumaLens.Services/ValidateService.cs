@@ -1,4 +1,5 @@
-﻿using DumaLens.Services.Cards;
+﻿using DumaLens.Services.Auth;
+using DumaLens.Services.Cards;
 using DumaLens.Services.Contracts;
 using DumaLens.Services.Contracts.Exceptions;
 using DumaLens.Services.Contracts.Models;
@@ -22,6 +23,12 @@ public class ValidateService : IValidateService, IServiceAnchor
             [typeof(VoteSearchQueryModel)] = new VoteSearchQueryModelValidator(),
             [typeof(BillSearchQueryModel)] = new BillSearchQueryModelValidator(),
             [typeof(DeputyListQueryModel)] = new DeputyListQueryModelValidator(),
+            [typeof(LoginModel)] = new LoginModelValidator(),
+            [typeof(RefreshRequestModel)] = new RefreshRequestModelValidator(),
+            [typeof(ChangePasswordModel)] = new ChangePasswordModelValidator(),
+            [typeof(CreateUserModel)] = new CreateUserModelValidator(),
+            [typeof(UpdateUserModel)] = new UpdateUserModelValidator(),
+            [typeof(UserListQueryModel)] = new UserListQueryModelValidator(),
         };
     }
 

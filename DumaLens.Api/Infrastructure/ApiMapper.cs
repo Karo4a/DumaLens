@@ -1,9 +1,11 @@
 ﻿using AutoMapper;
+using DumaLens.Api.Models.Auth;
 using DumaLens.Api.Models.Bills;
 using DumaLens.Api.Models.Convocations;
 using DumaLens.Api.Models.Deputies;
 using DumaLens.Api.Models.Factions;
 using DumaLens.Api.Models.Stats;
+using DumaLens.Api.Models.Users;
 using DumaLens.Api.Models.Votes;
 using DumaLens.Services.Contracts.Models;
 
@@ -50,5 +52,16 @@ public class ApiMapper : Profile
             .ForMember(destination => destination.Id, option => option.MapFrom(source => source.SiteId));
         CreateMap<ConvocationCatalogItemModel, ConvocationApiModel>();
         CreateMap<StatsOverviewModel, StatsOverviewApiModel>();
+        // Auth (Э9)
+        CreateMap<LoginRequestApiModel, LoginModel>();
+        CreateMap<RefreshRequestApiModel, RefreshRequestModel>();
+        CreateMap<ChangePasswordRequestApiModel, ChangePasswordModel>();
+        CreateMap<AuthResultModel, AuthResponseApiModel>();
+        CreateMap<UserProfileModel, UserProfileApiModel>();
+        CreateMap<CreateUserRequestApiModel, CreateUserModel>();
+        CreateMap<UpdateUserRequestApiModel, UpdateUserModel>();
+        CreateMap<UserListItemModel, UserApiModel>();
+        CreateMap<UserPageModel, UserPageApiModel>();
+        CreateMap<ResetPasswordResultModel, ResetPasswordResponseApiModel>();
     }
 }

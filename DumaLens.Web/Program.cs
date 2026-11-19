@@ -1,5 +1,8 @@
 ﻿using DumaLens.Api.Client;
 using DumaLens.Web.Components;
+using DumaLens.Web.Infrastructure;
+using DumaLens.Web.Services;
+using Microsoft.AspNetCore.Components.Authorization;
 
 namespace DumaLens.Web;
 
@@ -16,27 +19,40 @@ public partial class Program
         var builder = WebApplication.CreateBuilder(args);
         builder.Services.AddRazorComponents()
             .AddInteractiveServerComponents();
+        builder.Services.AddAuthorizationCore();
 
         var apiBaseUrl = builder.Configuration.GetValue<string>("ApiSettings:BaseUrl")
             ?? throw new InvalidOperationException("ApiSettings:BaseUrl is not configured");
 
+        // Аутентификация (Э9): токены в ProtectedLocalStorage, состояние пользователя на цепь,
+        // Bearer + авто-refresh в обработчике HttpClient
+        builder.Services.AddScoped<IClientTokenStore, ClientTokenStore>();
+        builder.Services.AddScoped<UserState>();
+        builder.Services.AddScoped<UserStateInitializer>();
+        builder.Services.AddScoped<AuthenticationStateProvider, UserStateAuthenticationStateProvider>();
+
+        // Клиент без обработчика аутентификации — для обновления токенов (без рекурсии)
         builder.Services.AddHttpClient("DumaLensApi", client =>
         {
             client.BaseAddress = new Uri(apiBaseUrl);
         });
 
+        builder.Services.AddScoped<IAuthClient>(sp =>
+            new AuthClient(apiBaseUrl, CreateAuthenticatedHttpClient(sp)));
+        builder.Services.AddScoped<IUsersClient>(sp =>
+            new UsersClient(apiBaseUrl, CreateAuthenticatedHttpClient(sp)));
         builder.Services.AddScoped<IVotesClient>(sp =>
-            new VotesClient(apiBaseUrl, sp.GetRequiredService<IHttpClientFactory>().CreateClient("DumaLensApi")));
+            new VotesClient(apiBaseUrl, CreateAuthenticatedHttpClient(sp)));
         builder.Services.AddScoped<IBillsClient>(sp =>
-            new BillsClient(apiBaseUrl, sp.GetRequiredService<IHttpClientFactory>().CreateClient("DumaLensApi")));
+            new BillsClient(apiBaseUrl, CreateAuthenticatedHttpClient(sp)));
         builder.Services.AddScoped<IFactionsClient>(sp =>
-            new FactionsClient(apiBaseUrl, sp.GetRequiredService<IHttpClientFactory>().CreateClient("DumaLensApi")));
+            new FactionsClient(apiBaseUrl, CreateAuthenticatedHttpClient(sp)));
         builder.Services.AddScoped<IDeputiesClient>(sp =>
-            new DeputiesClient(apiBaseUrl, sp.GetRequiredService<IHttpClientFactory>().CreateClient("DumaLensApi")));
+            new DeputiesClient(apiBaseUrl, CreateAuthenticatedHttpClient(sp)));
         builder.Services.AddScoped<IConvocationsClient>(sp =>
-            new ConvocationsClient(apiBaseUrl, sp.GetRequiredService<IHttpClientFactory>().CreateClient("DumaLensApi")));
+            new ConvocationsClient(apiBaseUrl, CreateAuthenticatedHttpClient(sp)));
         builder.Services.AddScoped<IStatsClient>(sp =>
-            new StatsClient(apiBaseUrl, sp.GetRequiredService<IHttpClientFactory>().CreateClient("DumaLensApi")));
+            new StatsClient(apiBaseUrl, CreateAuthenticatedHttpClient(sp)));
 
         var app = builder.Build();
         if (!app.Environment.IsDevelopment())
@@ -58,5 +74,22 @@ public partial class Program
         app.MapRazorComponents<App>()
             .AddInteractiveServerRenderMode();
         app.Run();
+    }
+
+    /// <summary>
+    /// HttpClient NSwag-клиента с Bearer-токеном и авто-refresh при 401 (scoped на цепь)
+    /// </summary>
+    private static HttpClient CreateAuthenticatedHttpClient(IServiceProvider provider)
+    {
+        var handler = new AuthDelegatingHandler(
+            provider.GetRequiredService<IClientTokenStore>(),
+            provider.GetRequiredService<IHttpClientFactory>())
+        {
+            InnerHandler = new SocketsHttpHandler
+            {
+                PooledConnectionLifetime = TimeSpan.FromMinutes(2),
+            },
+        };
+        return new HttpClient(handler, disposeHandler: false);
     }
 }
