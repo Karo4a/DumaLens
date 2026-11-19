@@ -45,7 +45,14 @@ public partial class Program
             app.UseHsts();
         }
 
-        app.UseHttpsRedirection();
+        // Редирект на HTTPS включается только при настроенном https-эндпоинте:
+        // демо-комплект и http-профиль работают по HTTP, иначе middleware пишет
+        // предупреждение "Failed to determine the https port for redirect"
+        var urls = app.Configuration["ASPNETCORE_URLS"] ?? app.Configuration["urls"];
+        if (urls is not null && urls.Contains("https://", StringComparison.OrdinalIgnoreCase))
+        {
+            app.UseHttpsRedirection();
+        }
         app.UseStaticFiles();
         app.UseAntiforgery();
         app.MapRazorComponents<App>()

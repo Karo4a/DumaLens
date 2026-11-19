@@ -59,13 +59,9 @@ if /i not "%~1"=="--yes" (
 )
 
 set IMPORTER=DumaLens.Importer\bin\Release\net8.0\DumaLens.Importer.dll
-if not exist "%IMPORTER%" (
-    echo [1/4] Сборка Release ^(бинарники не найдены^)...
-    dotnet build DumaLens.Importer -c Release --nologo
-    if errorlevel 1 exit /b 1
-) else (
-    echo [1/4] Бинарники Release на месте, сборка не требуется.
-)
+echo [1/4] Сборка Release (инкрементальная)...
+dotnet build DumaLens.Importer -c Release --nologo
+if errorlevel 1 exit /b 1
 
 echo [2/4] Миграция IntKeysDeputyVotes + очистка агрегатов ^(recalc-stats^)...
 dotnet "%IMPORTER%" recalc-stats > transition-recalc.log 2>&1

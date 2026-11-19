@@ -20,6 +20,7 @@ MVP в разработке. Выполнены этапы **Э0–Э8**: кар
 ## Требования
 
 - .NET 8 SDK (`global.json` пинит 8.0.x)
+- Visual Studio 2022 **17.8+** — только для работы в IDE (консольная сборка и скрипты `Deploy/` от версии VS не зависят; подробности — [Docs/08-deployment.md](Docs/08-deployment.md))
 - PostgreSQL 16+ (проверено на 17), учётная запись с правами создания баз
 - Windows или Linux; скрипты `Deploy/` — Windows (cmd), CLI импортёра кроссплатформенный
 
@@ -55,7 +56,7 @@ export ConnectionStrings__DefaultConnection="Host=localhost;Port=5432;Database=d
 Импорт архива (база `dumalens` создаётся и мигрируется автоматически, psql/dotnet-ef не нужны):
 
 ```bat
-:: Windows — сборка при необходимости → импорт --bulk → сверка с паспортом
+:: Windows — инкрементальная сборка → импорт --bulk → сверка с паспортом
 Deploy\import.cmd
 ```
 
@@ -74,7 +75,7 @@ dotnet run --project DumaLens.Api    # http://localhost:5200/swagger
 dotnet run --project DumaLens.Web    # http://localhost:5100 (Blazor-интерфейс)
 ```
 
-Windows-демо одним скриптом: `Deploy\demo.cmd`. Пополнение с живого сайта:
+Windows-демо одним скриптом: `Deploy\demo.cmd` (сборка, запуск Api и Web, браузер открывается сам). Пополнение с живого сайта:
 
 ```bash
 dotnet run --project DumaLens.Importer -c Release -- crawl --convocation 0 --parallel 8 --delay-ms 500

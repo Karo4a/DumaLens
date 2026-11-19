@@ -22,13 +22,9 @@ if not exist vote-master.zip (
 )
 
 set IMPORTER=DumaLens.Importer\bin\Release\net8.0\DumaLens.Importer.dll
-if not exist "%IMPORTER%" (
-    echo [1/3] Сборка Release ^(бинарники не найдены^)...
-    dotnet build DumaLens.Importer -c Release --nologo
-    if errorlevel 1 exit /b 1
-) else (
-    echo [1/3] Бинарники Release на месте, сборка не требуется.
-)
+echo [1/3] Сборка Release (инкрементальная)...
+dotnet build DumaLens.Importer -c Release --nologo
+if errorlevel 1 exit /b 1
 
 echo [2/3] Импорт архива: bulk-режим ^(при нехватке прав — автоматический переход в обычный^)...
 dotnet "%IMPORTER%" import-archive --zip vote-master.zip --bulk --log import.log %*
