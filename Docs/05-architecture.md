@@ -176,7 +176,7 @@ ImportQuarantine — журнал аномалий импорта
 |---|---|---|
 | `Convocations` | `Number` (1–9), `SiteCode` (`AAAAAAA8`), `DateFrom`, `DateTo`, `Title` | unique `Number`, unique `SiteCode` |
 | `Factions` (канон) | `Code` (`ER`, `KPRF`, `LDPR`, `SR`, `NL`, `INDEPENDENT`, …), `Title` | unique `Code` |
-| `FactionPeriods` | `FactionId`, `SiteId` (bigint, `72100024`), `RowId` (smallint identity; в сиде фиксирован 1..N, ADR-14), `Title` («ЕР», «СР-Р»), `ConvocationId`, `DateFrom`, `DateTo` | unique (`SiteId`, `ConvocationId`); unique `RowId`; индекс `FactionId` |
+| `FactionPeriods` | `FactionId`, `SiteId` (bigint, `72100024`), `RowId` (smallint identity; в seed-данных фиксирован 1..N, ADR-14), `Title` («ЕР», «СР-Р»), `ConvocationId`, `DateFrom`, `DateTo` | unique (`SiteId`, `ConvocationId`); unique `RowId`; индекс `FactionId` |
 | `Deputies` | `SiteId` (bigint), `RowId` (int identity, ADR-14), `FullName`, `SortName` | unique `SiteId`; unique `RowId`; индекс `FullName` |
 | `DeputyFactionMemberships` | `DeputyId`, `FactionPeriodId`, `DateFrom`, `DateTo` (по данным голосований) | индекс (`DeputyId`, `FactionPeriodId`) |
 | `Bills` | `Number` (`500091-8`), `SozdUrl` (вычисляемая ссылка) | unique `Number` |
@@ -229,8 +229,8 @@ AND EXISTS (SELECT 1 FROM "VoteFactionStats" s
 
 ### 4.2. `DumaLens.Importer` (CLI)
 
-- `import-archive`: потоковое чтение ZIP (`ZipArchive`, последовательно), батчи по 500 голосований, upsert по `SiteId`, COPY для дочерних строк, журнал прогресса (файл + таблица), `--resume` (пропуск обработанных id), построение справочников (депутаты, фракционные периоды, законопроекты) и агрегатов на лету. Финал — `verify`.
-- `crawl`: обход листингов созыва (`?convocation=…&page=N`, 20/стр), сбор итогов, очередь карточек (пропуск уже импортированных с `Source=site` и актуальным составом), пауза ≥ 0,5–1 с, backoff при 5xx (3 ретрая, затем классификация «id отсутствует» для устойчивых 500), журнал прогресса, возобновление. Порядок: сначала листинги всех созывов (итоги + обнаружение пробелов), затем карточки недостающих.
+- `import-archive`: потоковое чтение ZIP (`ZipArchive`, последовательно), пачки по 500 голосований, upsert по `SiteId`, COPY для дочерних строк, журнал прогресса (файл + таблица), `--resume` (пропуск обработанных id), построение справочников (депутаты, фракционные периоды, законопроекты) и агрегатов на лету. Финал — `verify`.
+- `crawl`: обход листингов созыва (`?convocation=…&page=N`, 20/стр), сбор итогов, очередь карточек (пропуск уже импортированных с `Source=site` и актуальным составом), пауза ≥ 0,5–1 с, backoff при 5xx (3 повторные попытки, затем классификация «id отсутствует» для устойчивых 500), журнал прогресса, возобновление. Порядок: сначала листинги всех созывов (итоги + обнаружение пробелов), затем карточки недостающих.
 - `verify`: пересчёт контрольных сумм (голосования/голоса депутатов по созывам, коды результатов) и сравнение с паспортом данных (02, §2.2) + отчёт о расхождениях и карантине.
 - `recalc-stats`: пересчёт `VoteFactionStats` из `DeputyVotes` (после карантина/исправлений).
 
@@ -273,7 +273,7 @@ AND EXISTS (SELECT 1 FROM "VoteFactionStats" s
 | ADR-11 | **Своя схема пользователей/ролей вместо ASP.NET Core Identity** — по обоим эталонам | Оба эталона используют собственные `User`/`Role`/refresh-сущности и PBKDF2; Identity тянет свою схему таблиц и cookie-конвейер, не нужный при JWT + NSwag-клиенте. База: одна роль на пользователя (DG master), иерархия прав — политиками |
 | ADR-12 | **PBKDF2-SHA256 + соль 32 байта, ≥ 100 000 итераций** | Алгоритм как в обоих эталонах (`SecurityHelper`, `Rfc2898DeriveBytes.Pbkdf2`), но в эталонах `MaximumIterations = 6` — криптографически слабо; итерации поднимаем до ≥ 100 тыс. (рекомендация OWASP). Осознанное отступление от эталона, фиксируется в ревью как принятое |
 | ADR-13 | **JWT access (JWS) + refresh с ротацией и SecurityStamp**; HttpOnly-cookie — для браузерных клиентов | Specular: refresh — JWT, cookie HttpOnly/Secure/SameSite, отзыв через SecurityStamp, JWS без шифрования (клиент читает клеймы). DG: refresh — запись в БД, защищённая DataProtection, один активный на пользователя, JWE-шифрование access. Берём гибрид: refresh-запись в БД (отзыв/ротация) + JWS-подпись access (без шифрования — Web читает клеймы); Blazor Server хранит токены в ProtectedLocalStorage (DG) |
-| ADR-14 | **Узкие int-ключи в `DeputyVotes` вместо GUID FK**: `VoteId`/`DeputyId` int, `FactionPeriodId` smallint?; `RowId` identity на `Votes`/`Deputies` (int) и `FactionPeriods` (smallint, в сиде фиксирован 1..N); GUID справочников остаются PK, FK через `HasPrincipalKey(RowId)` | Замер прототипа на полном архиве (45,6 млн голосов, verify 24/24): БД 8734→4277 MB (−51%), `DeputyVotes` 8229→3818 MB (heap −47,5%, PK −72,9%); вторичные индексы почти не уменьшаются — B-tree deduplication при малом числе уникальных ключей (2321 депутат / 60 периодов). COPY голосов 2,3× быстрее (107 с против 244 с). Цена: миграция `IntKeysDeputyVotes` пересоздаёт `DeputyVotes` (данные восстанавливаются реимпортом архива, `Deploy\transition-int-keys.cmd`); сид периодов дополнительно фиксирует `RowId`. Уникальность `RowId` обеспечивается только альтернативным ключом (AK от `HasPrincipalKey`), без дублирующего уникального индекса: миграция `DropRowIdDuplicateIndexes` удаляет `IX_*_RowId`, FK опирается на индекс AK. Альтернативы (оставить GUID, сжатие `Votes`, native ENUM) отклонены |
+| ADR-14 | **Узкие int-ключи в `DeputyVotes` вместо GUID FK**: `VoteId`/`DeputyId` int, `FactionPeriodId` smallint?; `RowId` identity на `Votes`/`Deputies` (int) и `FactionPeriods` (smallint, в seed-данных фиксирован 1..N); GUID справочников остаются PK, FK через `HasPrincipalKey(RowId)` | Замер прототипа на полном архиве (45,6 млн голосов, verify 24/24): БД 8734→4277 MB (−51%), `DeputyVotes` 8229→3818 MB (heap −47,5%, PK −72,9%); вторичные индексы почти не уменьшаются — B-tree deduplication при малом числе уникальных ключей (2321 депутат / 60 периодов). COPY голосов 2,3× быстрее (107 с против 244 с). Цена: миграция `IntKeysDeputyVotes` пересоздаёт `DeputyVotes` (данные восстанавливаются реимпортом архива, `Deploy\transition-int-keys.cmd`); начальное заполнение периодов дополнительно фиксирует `RowId`. Уникальность `RowId` обеспечивается только альтернативным ключом (AK от `HasPrincipalKey`), без дублирующего уникального индекса: миграция `DropRowIdDuplicateIndexes` удаляет `IX_*_RowId`, FK опирается на индекс AK. Альтернативы (оставить GUID, сжатие `Votes`, native ENUM) отклонены |
 
 ## 7. Ревью и контроль качества
 
@@ -281,6 +281,6 @@ AND EXISTS (SELECT 1 FROM "VoteFactionStats" s
 
 1. `dotnet build DumaLens.sln -t:Rebuild -clp:NoSummary` — 0 ошибок, новые warning'и разобраны; `dotnet list package --vulnerable --include-transitive`.
 2. `dotnet test DumaLens.sln` — все тесты зелёные (с учётом ADR-3: недоступный PostgreSQL = явный skip, не молчаливый успех).
-3. Ревью кода: механический скан + слой за слоем + тесты + стиль; блокирующие замечания устраняются до перехода к следующему этапу.
+3. Ревью кода: механическое сканирование + слой за слоем + тесты + стиль; блокирующие замечания устраняются до перехода к следующему этапу.
 4. `dotnet format --verify-no-changes` по `.editorconfig`.
 5. После сборки — `dotnet build-server shutdown` (висящие MSBuild-ноды).

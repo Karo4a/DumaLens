@@ -65,7 +65,7 @@
 
 ## Исправления по ходе приёмки
 
-- `ImporterHost`: не был зарегистрирован `IMapper` — CLI `create-admin` падал при резолве `UserService` (поймано `CreateAdminWiringTests`).
+- `ImporterHost`: не был зарегистрирован `IMapper` — CLI `create-admin` падал при разрешении зависимости `UserService` (поймано `CreateAdminWiringTests`).
 - Web: `[Authorize]` на страницах давал 500 при пререндере (endpoint-метаданные → `AuthorizationMiddleware` → `IAuthenticationService`, которого нет и не может быть при токенах в браузере). Защита переведена на `ProtectedContent` (`AuthorizeView` + gate инициализации) — механика DocumentGenerator.Web.
 - Web: гонка редиректов после смены пароля/выхода (`UserState.Clear()` → `RedirectToLogin` перебивал адрес возврата). Смена пароля и выход выполняются полной перезагрузкой (`forceLoad`) без ручной очистки состояния.
 - Api: `AuthOptions` связывается лениво из DI — конфигурация тестового хоста применяется после регистрации сервисов в `Main` (иначе rate limit тест-хоста не применялся).
