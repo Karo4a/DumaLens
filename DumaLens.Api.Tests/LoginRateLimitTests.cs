@@ -71,6 +71,31 @@ public class LoginRateLimitTests : IAsyncLifetime
         rejected.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
     }
 
+    /// <summary>
+    /// Смена пароля защищена собственным rate limit: четвёртый запрос в окне — 429
+    /// (брутфорс текущего пароля украденным access-токеном ограничен)
+    /// </summary>
+    [SkippableFact]
+    public async Task FourthChangePasswordInWindowShouldReturn429()
+    {
+        Skip.IfNot(PostgreSqlAvailability.IsAvailable, "PostgreSQL недоступен — интеграционный тест пропущен (ADR-3)");
+        var client = factory.CreateClient();
+        var login = $"rl_change_{Guid.NewGuid():N}";
+        await AuthApiHelpers.SeedUser(context!, login);
+        var tokens = await client.LoginAsync(login);
+        var accessToken = tokens.GetProperty("accessToken").GetString()!;
+
+        for (var i = 0; i < 3; i++)
+        {
+            var response = await client.PostWithBearer("/api/auth/change-password",
+                new { currentPassword = "WrongPassword1", newPassword = "NewPassword456" }, accessToken);
+            response.StatusCode.Should().Be(HttpStatusCode.Unauthorized, "запрос {0} в пределах лимита", i + 1);
+        }
+        var rejected = await client.PostWithBearer("/api/auth/change-password",
+            new { currentPassword = "WrongPassword1", newPassword = "NewPassword456" }, accessToken);
+        rejected.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
+    }
+
     private sealed class RateLimitFactory : TestWebApplicationFactory
     {
         protected override void ConfigureWebHost(IWebHostBuilder builder)

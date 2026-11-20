@@ -30,6 +30,8 @@ public partial class Program
         builder.Services.AddScoped<UserState>();
         builder.Services.AddScoped<UserStateInitializer>();
         builder.Services.AddScoped<AuthenticationStateProvider, UserStateAuthenticationStateProvider>();
+        // Один семафор обновления токенов на цепь: общие для всех NSwag-клиентов цепи
+        builder.Services.AddScoped<RefreshLock>();
 
         // Клиент без обработчика аутентификации — для обновления токенов (без рекурсии)
         builder.Services.AddHttpClient("DumaLensApi", client =>
@@ -83,7 +85,8 @@ public partial class Program
     {
         var handler = new AuthDelegatingHandler(
             provider.GetRequiredService<IClientTokenStore>(),
-            provider.GetRequiredService<IHttpClientFactory>())
+            provider.GetRequiredService<IHttpClientFactory>(),
+            provider.GetRequiredService<RefreshLock>())
         {
             InnerHandler = new SocketsHttpHandler
             {

@@ -2,6 +2,7 @@
 using DumaLens.Api.Infrastructure.Authorization;
 using DumaLens.Api.Models.Exceptions;
 using DumaLens.Api.Models.Users;
+using DumaLens.Entities.ValidationConstants;
 using DumaLens.Services.Contracts;
 using DumaLens.Services.Contracts.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -41,7 +42,7 @@ public class UsersController : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiValidationExceptionDetail), StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> GetPage([FromQuery] int page, [FromQuery] int pageSize, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetPage([FromQuery] int page = UserValidationConstants.PageMin, [FromQuery] int pageSize = UserValidationConstants.PageSizeDefault, CancellationToken cancellationToken = default)
     {
         var query = new UserListQueryModel
         {
@@ -58,7 +59,7 @@ public class UsersController : ControllerBase
     /// <param name="request">Данные нового пользователя</param>
     /// <param name="cancellationToken">Токен отмены</param>
     [HttpPost]
-    [ProducesResponseType(typeof(UserApiModel), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(UserApiModel), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiExceptionDetail), StatusCodes.Status409Conflict)]
@@ -66,7 +67,7 @@ public class UsersController : ControllerBase
     public async Task<IActionResult> Create([FromBody] CreateUserRequestApiModel request, CancellationToken cancellationToken)
     {
         var result = await userService.Create(mapper.Map<CreateUserModel>(request), cancellationToken);
-        return Ok(mapper.Map<UserApiModel>(result));
+        return StatusCode(StatusCodes.Status201Created, mapper.Map<UserApiModel>(result));
     }
 
     /// <summary>

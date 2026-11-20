@@ -11,6 +11,11 @@ public static class VoteSearchValidationConstants
     public const int PageMin = 1;
 
     /// <summary>
+    /// Максимальный номер страницы (защита Skip от переполнения int)
+    /// </summary>
+    public const int PageMax = 100_000;
+
+    /// <summary>
     /// Размер страницы по умолчанию
     /// </summary>
     public const int PageSizeDefault = 20;

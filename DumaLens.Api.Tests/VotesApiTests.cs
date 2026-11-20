@@ -267,4 +267,20 @@ public class VotesApiTests
         var root = await response.Content.ReadFromJsonAsync<JsonDocument>();
         root!.RootElement.GetProperty("message").GetString().Should().Contain("999999999");
     }
+
+    /// <summary>
+    /// Номер страницы сверх верхней границы — 422, а не 500 от переполнения OFFSET
+    /// </summary>
+    [SkippableFact]
+    public async Task Search_PageOverflow_Returns422()
+    {
+        Skip.IfNot(PostgreSqlAvailability.IsAvailable, "PostgreSQL недоступен — интеграционный тест пропущен (ADR-3)");
+
+        // Arrange
+        // Act
+        var response = await client.GetAsync("/api/votes?page=100001&pageSize=100");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+    }
 }

@@ -30,5 +30,12 @@ public class RefreshTokenConfiguration : IEntityTypeConfiguration<RefreshToken>,
         builder.HasIndex(x => x.UserId, $"IX_{nameof(RefreshToken)}_{nameof(RefreshToken.UserId)}")
             .IsUnique()
             .HasFilter($"\"{nameof(RefreshToken.RevokedAt)}\" IS NULL");
+
+        // Ссылочная целостность: токен не может указывать на несуществующего пользователя;
+        // при будущем физическом удалении аккаунта его токены удаляются каскадом
+        builder.HasOne<User>()
+            .WithMany()
+            .HasForeignKey(x => x.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

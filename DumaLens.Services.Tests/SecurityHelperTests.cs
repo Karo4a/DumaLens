@@ -42,25 +42,68 @@ public class SecurityHelperTests
     }
 
     /// <summary>
-    /// Хэш совпадает с независимым вычислением PBKDF2-SHA256 (100 000 итераций, 32 байта)
+    /// Хэш совпадает с независимым вычислением PBKDF2-SHA256 (100 000 итераций, 32 байта) в формате «{итерации}.{base64}»
     /// </summary>
     [Fact]
     public void HashPasswordShouldMatchIndependentPbkdf2Computation()
     {
         var saltBytes = RandomNumberGenerator.GetBytes(32);
         var salt = Convert.ToBase64String(saltBytes);
-        var expected = Convert.ToBase64String(Rfc2898DeriveBytes.Pbkdf2("Password123", saltBytes, 100_000, HashAlgorithmName.SHA256, 32));
+        var expected = "100000." + Convert.ToBase64String(Rfc2898DeriveBytes.Pbkdf2("Password123", saltBytes, 100_000, HashAlgorithmName.SHA256, 32));
         SecurityHelper.HashPassword("Password123", salt).Should().Be(expected);
     }
 
     /// <summary>
-    /// Соль и хэш — 32 байта (base64)
+    /// Соль и хэш — 32 байта (base64); итерации вынесены в префикс
     /// </summary>
     [Fact]
     public void SaltAndHashShouldBe32Bytes()
     {
         Convert.FromBase64String(SecurityHelper.GenerateSalt()).Should().HaveCount(32);
-        Convert.FromBase64String(SecurityHelper.HashPassword("Password123", SecurityHelper.GenerateSalt())).Should().HaveCount(32);
+        var hash = SecurityHelper.HashPassword("Password123", SecurityHelper.GenerateSalt());
+        hash.Should().StartWith("100000.");
+        Convert.FromBase64String(hash.Split('.')[1]).Should().HaveCount(32);
+    }
+
+    /// <summary>
+    /// Проверка использует итерации из префикса хэша: смена конфигурируемого значения не ломает существующие пароли
+    /// </summary>
+    [Fact]
+    public void VerifyPasswordShouldUseIterationsEmbeddedInHash()
+    {
+        var salt = SecurityHelper.GenerateSalt();
+        var hash = SecurityHelper.HashPassword("Password123", salt, 100_000);
+        SecurityHelper.GetIterations(hash).Should().Be(100_000);
+        // Конфигурация «ушла вперёд», но хэш хранит свои итерации
+        SecurityHelper.VerifyPassword("Password123", salt, hash, iterations: 150_000).Should().BeTrue();
+        SecurityHelper.VerifyPassword("WrongPassword1", salt, hash, iterations: 150_000).Should().BeFalse();
+    }
+
+    /// <summary>
+    /// Legacy-хэш без префикса (Э9 до формата) проверяется с переданным числом итераций
+    /// </summary>
+    [Fact]
+    public void VerifyPasswordShouldSupportLegacyHashWithoutPrefix()
+    {
+        var saltBytes = RandomNumberGenerator.GetBytes(32);
+        var salt = Convert.ToBase64String(saltBytes);
+        var legacyHash = Convert.ToBase64String(Rfc2898DeriveBytes.Pbkdf2("Password123", saltBytes, 100_000, HashAlgorithmName.SHA256, 32));
+        SecurityHelper.GetIterations(legacyHash, fallbackIterations: 100_000).Should().Be(100_000);
+        SecurityHelper.VerifyPassword("Password123", salt, legacyHash).Should().BeTrue();
+        SecurityHelper.VerifyPassword("WrongPassword1", salt, legacyHash).Should().BeFalse();
+    }
+
+    /// <summary>
+    /// Повреждённый префикс итераций (ноль/отрицательное/мусор) не приводит к исключению — отказ проверки
+    /// </summary>
+    [Fact]
+    public void VerifyPasswordShouldRejectInvalidIterationsPrefix()
+    {
+        var salt = SecurityHelper.GenerateSalt();
+        var hashPart = SecurityHelper.HashPassword("Password123", salt).Split('.')[1];
+        SecurityHelper.VerifyPassword("Password123", salt, "0." + hashPart).Should().BeFalse();
+        SecurityHelper.VerifyPassword("Password123", salt, "-5." + hashPart).Should().BeFalse();
+        SecurityHelper.VerifyPassword("Password123", salt, "abc." + hashPart).Should().BeFalse();
     }
 
     /// <summary>

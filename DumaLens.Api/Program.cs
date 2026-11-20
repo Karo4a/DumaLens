@@ -2,6 +2,7 @@
 using DumaLens.Api.Controllers;
 using DumaLens.Api.Infrastructure;
 using DumaLens.Api.Infrastructure.Authorization;
+using DumaLens.Api.Models.Exceptions;
 using DumaLens.Common;
 using DumaLens.Common.Contracts;
 using DumaLens.Common.Extensions;
@@ -10,6 +11,7 @@ using DumaLens.Context.Contracts;
 using DumaLens.Entities.Enums;
 using DumaLens.Repositories;
 using DumaLens.Services;
+using DumaLens.Services.Auth;
 using DumaLens.Services.Contracts;
 using DumaLens.Services.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -134,6 +136,8 @@ public class Program
                 authOptions.SigningKey = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
                 provider.GetRequiredService<ILogger<Program>>().LogWarning("Auth:SigningKey не настроен — используется временный ключ на время жизни процесса; сессии не переживут перезапуск. Для production задайте Auth__SigningKey");
             }
+            // Fail-fast: некорректный ключ/диапазоны — отказ запуска с понятной ошибкой, а не 500 при первом логине
+            authOptions.Validate();
             return authOptions;
         });
         builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -154,19 +158,50 @@ public class Program
                     RoleClaimType = ClaimTypes.Role,
                     NameClaimType = ClaimTypes.Name,
                 };
+                options.Events = new JwtBearerEvents
+                {
+                    // 403 с телом в формате контракта: временный пароль либо недостаточная роль
+                    OnForbidden = async context =>
+                    {
+                        context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                        var temporaryPassword = context.HttpContext.User.FindFirstValue(TokenService.TemporaryPasswordClaimType) == "true";
+                        var message = temporaryPassword
+                            ? "Требуется смена временного пароля"
+                            : "Недостаточно прав для этого действия";
+                        await context.Response.WriteAsJsonAsync(new ApiExceptionDetail(message));
+                    },
+                };
             });
         builder.Services.AddAuthorization(options =>
         {
+            // Политика по умолчанию ([Authorize] без имени): аутентификация + запрет временного пароля.
+            // [AllowAnonymous]-эндпоинты авторизацию не проходят — публичное чтение не затрагивается
+            options.DefaultPolicy = new AuthorizationPolicyBuilder()
+                .RequireAuthenticatedUser()
+                .AddRequirements(new TemporaryPasswordRequirement())
+                .Build();
             options.AddPolicy(AuthorizationPolicies.Moderator, policy =>
-                policy.Requirements.Add(new MinimumRoleRequirement(Role.Moderator)));
+            {
+                policy.Requirements.Add(new MinimumRoleRequirement(Role.Moderator));
+                policy.Requirements.Add(new TemporaryPasswordRequirement());
+            });
             options.AddPolicy(AuthorizationPolicies.Administrator, policy =>
-                policy.Requirements.Add(new MinimumRoleRequirement(Role.Administrator)));
+            {
+                policy.Requirements.Add(new MinimumRoleRequirement(Role.Administrator));
+                policy.Requirements.Add(new TemporaryPasswordRequirement());
+            });
         });
         builder.Services.AddSingleton<IAuthorizationHandler, MinimumRoleHandler>();
+        builder.Services.AddSingleton<IAuthorizationHandler, TemporaryPasswordHandler>();
         builder.Services.AddRateLimiter(options =>
         {
             options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-            options.AddPolicy(AuthController.LoginRateLimitPolicy, httpContext =>
+            options.AddPolicy(AuthController.LoginRateLimitPolicy, CreateFixedWindowPartition);
+            options.AddPolicy(AuthController.ChangePasswordRateLimitPolicy, CreateFixedWindowPartition);
+            return;
+
+            // Фиксированное окно на IP; политики логина и смены пароля — раздельные бюджеты
+            static RateLimitPartition<string> CreateFixedWindowPartition(HttpContext httpContext)
             {
                 var authOptions = httpContext.RequestServices.GetRequiredService<AuthOptions>();
                 return RateLimitPartition.GetFixedWindowLimiter(
@@ -178,8 +213,10 @@ public class Program
                         QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                         QueueLimit = 0,
                     });
-            });
+            }
         });
+        // Фоновая очистка утративших силу refresh-токенов (суточный таймер)
+        builder.Services.AddHostedService<TokenCleanupBackgroundService>();
         var app = builder.Build();
         if (app.Environment.IsDevelopment())
         {

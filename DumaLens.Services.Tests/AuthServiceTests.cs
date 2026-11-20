@@ -247,20 +247,139 @@ public sealed class AuthServiceTests : AuthTestBase
     }
 
     /// <summary>
-    /// Временный пароль блокирует обновление (требуется смена пароля)
+    /// Временный пароль не блокирует обновление: смену принуждает авторизация Api,
+    /// иначе смена пароля после истечения access-токена была бы невозможна
     /// </summary>
     [SkippableFact]
-    public async Task RefreshWithTemporaryPasswordShouldThrowUnauthorized()
+    public async Task RefreshWithTemporaryPasswordShouldSucceedAndKeepFlag()
     {
         SkipIfUnavailable();
         var user = await SeedUser("fresh", temporary: true);
         var login = await Auth.Login(new LoginModel { Login = "fresh", Password = DefaultPassword }, CancellationToken.None);
-        var entity = await Context.Set<User>().SingleAsync(x => x.Id == user.Id);
-        entity.PasswordIsTemporary = true;
-        await Context.SaveChangesAsync();
 
+        var refreshed = await Auth.Refresh(new RefreshRequestModel { RefreshToken = login.RefreshToken }, CancellationToken.None);
+
+        refreshed.User.PasswordIsTemporary.Should().BeTrue();
+        refreshed.RefreshToken.Should().NotBe(login.RefreshToken);
+        var stored = await UserRead.GetById(user.Id, CancellationToken.None);
+        stored!.PasswordIsTemporary.Should().BeTrue();
+    }
+
+    /// <summary>
+    /// Повторное использование только что отозванного токена (grace-окно) — гонка параллельных
+    /// обновлений: выпускается новая пара, сессии не отзываются
+    /// </summary>
+    [SkippableFact]
+    public async Task RefreshReuseWithinGraceWindowShouldIssueNewPair()
+    {
+        SkipIfUnavailable();
+        Options.RefreshReuseGraceSeconds = 30;
+        await SeedUser("reader");
+        var login = await Auth.Login(new LoginModel { Login = "reader", Password = DefaultPassword }, CancellationToken.None);
+        var first = await Auth.Refresh(new RefreshRequestModel { RefreshToken = login.RefreshToken }, CancellationToken.None);
+
+        // Вторая вкладка предъявляет только что отозванный токен в пределах grace-окна
+        var second = await Auth.Refresh(new RefreshRequestModel { RefreshToken = login.RefreshToken }, CancellationToken.None);
+
+        second.RefreshToken.Should().NotBe(first.RefreshToken);
+        var active = await Context.Set<RefreshToken>().AsNoTracking().CountAsync(x => x.RevokedAt == null);
+        active.Should().Be(1);
+        // Последняя пара рабочая: сессия жива
+        var third = await Auth.Refresh(new RefreshRequestModel { RefreshToken = second.RefreshToken }, CancellationToken.None);
+        third.AccessToken.Should().NotBeNullOrEmpty();
+    }
+
+    /// <summary>
+    /// Повторное использование отозванного токена вне grace-окна — кража: все сессии отзываются
+    /// </summary>
+    [SkippableFact]
+    public async Task RefreshReuseOutsideGraceWindowShouldRevokeAllSessions()
+    {
+        SkipIfUnavailable();
+        Options.RefreshReuseGraceSeconds = 30;
+        var user = await SeedUser("reader");
+        var login = await Auth.Login(new LoginModel { Login = "reader", Password = DefaultPassword }, CancellationToken.None);
+        var refreshed = await Auth.Refresh(new RefreshRequestModel { RefreshToken = login.RefreshToken }, CancellationToken.None);
+
+        Clock.Time = StartTime.AddSeconds(Options.RefreshReuseGraceSeconds + 1);
         var act = () => Auth.Refresh(new RefreshRequestModel { RefreshToken = login.RefreshToken }, CancellationToken.None);
         await act.Should().ThrowAsync<DumaLensUnauthorizedException>();
+
+        var followUp = () => Auth.Refresh(new RefreshRequestModel { RefreshToken = refreshed.RefreshToken }, CancellationToken.None);
+        await followUp.Should().ThrowAsync<DumaLensUnauthorizedException>();
+        var stored = await UserRead.GetById(user.Id, CancellationToken.None);
+        stored!.SecurityStamp.Should().NotBe(user.SecurityStamp);
+    }
+
+    /// <summary>
+    /// Неудачная смена пароля учитывается в счётчике блокировки (защита от брутфорса текущего пароля)
+    /// </summary>
+    [SkippableFact]
+    public async Task ChangePasswordWithWrongCurrentShouldIncrementCounter()
+    {
+        SkipIfUnavailable();
+        var user = await SeedUser("reader");
+        var act = () => Auth.ChangePassword(user.Id, new ChangePasswordModel { CurrentPassword = "WrongPassword1", NewPassword = "NewPassword456" }, CancellationToken.None);
+        await act.Should().ThrowAsync<DumaLensUnauthorizedException>();
+        var stored = await UserRead.GetById(user.Id, CancellationToken.None);
+        stored!.LoginAttemptFailedCount.Should().Be(1);
+        stored.LastFailedLoginAt.Should().Be(StartTime);
+    }
+
+    /// <summary>
+    /// После серии неудач смена пароля блокируется вместе с входом
+    /// </summary>
+    [SkippableFact]
+    public async Task ChangePasswordShouldBeDeniedWhenLockedOut()
+    {
+        SkipIfUnavailable();
+        var user = await SeedUser("reader");
+        for (var i = 0; i < Options.MaxFailedLoginAttempts; i++)
+        {
+            var wrong = () => Auth.ChangePassword(user.Id, new ChangePasswordModel { CurrentPassword = "WrongPassword1", NewPassword = "NewPassword456" }, CancellationToken.None);
+            await wrong.Should().ThrowAsync<DumaLensUnauthorizedException>();
+        }
+        var locked = () => Auth.ChangePassword(user.Id, new ChangePasswordModel { CurrentPassword = DefaultPassword, NewPassword = "NewPassword456" }, CancellationToken.None);
+        await locked.Should().ThrowAsync<DumaLensUnauthorizedException>();
+    }
+
+    /// <summary>
+    /// Заблокированный пользователь не может сменить пароль даже с валидным access-токеном
+    /// </summary>
+    [SkippableFact]
+    public async Task ChangePasswordShouldBeDeniedForBlockedUser()
+    {
+        SkipIfUnavailable();
+        var user = await SeedUser("reader", blocked: true);
+        var act = () => Auth.ChangePassword(user.Id, new ChangePasswordModel { CurrentPassword = DefaultPassword, NewPassword = "NewPassword456" }, CancellationToken.None);
+        await act.Should().ThrowAsync<DumaLensUnauthorizedException>();
+    }
+
+    /// <summary>
+    /// Все отказы входа возвращают единое сообщение: существование и состояние учётной записи не раскрываются
+    /// </summary>
+    [SkippableFact]
+    public async Task LoginFailuresShouldUseUnifiedMessage()
+    {
+        SkipIfUnavailable();
+        await SeedUser("reader");
+        await SeedUser("blocked", blocked: true);
+        const string expected = "Неверный логин или пароль";
+
+        var unknown = () => Auth.Login(new LoginModel { Login = "ghost", Password = DefaultPassword }, CancellationToken.None);
+        (await unknown.Should().ThrowAsync<DumaLensUnauthorizedException>()).Which.Message.Should().Be(expected);
+        var wrong = () => Auth.Login(new LoginModel { Login = "reader", Password = "WrongPassword1" }, CancellationToken.None);
+        (await wrong.Should().ThrowAsync<DumaLensUnauthorizedException>()).Which.Message.Should().Be(expected);
+        var blocked = () => Auth.Login(new LoginModel { Login = "blocked", Password = DefaultPassword }, CancellationToken.None);
+        (await blocked.Should().ThrowAsync<DumaLensUnauthorizedException>()).Which.Message.Should().Be(expected);
+
+        for (var i = 0; i < Options.MaxFailedLoginAttempts; i++)
+        {
+            var fail = () => Auth.Login(new LoginModel { Login = "reader", Password = "WrongPassword1" }, CancellationToken.None);
+            await fail.Should().ThrowAsync<DumaLensUnauthorizedException>();
+        }
+        var locked = () => Auth.Login(new LoginModel { Login = "reader", Password = DefaultPassword }, CancellationToken.None);
+        (await locked.Should().ThrowAsync<DumaLensUnauthorizedException>()).Which.Message.Should().Be(expected);
     }
 
     /// <summary>

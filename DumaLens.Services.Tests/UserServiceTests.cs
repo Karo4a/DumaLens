@@ -237,4 +237,55 @@ public sealed class UserServiceTests : AuthTestBase
         var act = () => Users.ResetPassword(Guid.NewGuid(), CancellationToken.None);
         await act.Should().ThrowAsync<DumaLensNotFoundException>();
     }
+
+    /// <summary>
+    /// Обновление с чужой почтой — конфликт
+    /// </summary>
+    [SkippableFact]
+    public async Task UpdateWithDuplicateEmailShouldThrowDuplicate()
+    {
+        SkipIfUnavailable();
+        var first = await Users.Create(new CreateUserModel { Login = "first", Name = "Первый", Email = "same@example.com", Role = "User", Password = "TempPassword123" }, CancellationToken.None);
+        var second = await Users.Create(new CreateUserModel { Login = "second", Name = "Второй", Role = "User", Password = "TempPassword123" }, CancellationToken.None);
+
+        var act = () => Users.Update(second.Id, new UpdateUserModel { Name = "Второй", Email = "SAME@example.com", Role = "User", Blocked = false }, CancellationToken.None);
+        await act.Should().ThrowAsync<DumaLensDuplicateException>();
+    }
+
+    /// <summary>
+    /// Обновление с собственной почтой разрешено (исключение себя из проверки уникальности)
+    /// </summary>
+    [SkippableFact]
+    public async Task UpdateWithOwnEmailShouldSucceed()
+    {
+        SkipIfUnavailable();
+        var user = await Users.Create(new CreateUserModel { Login = "owner", Name = "Владелец", Email = "own@example.com", Role = "User", Password = "TempPassword123" }, CancellationToken.None);
+
+        var updated = await Users.Update(user.Id, new UpdateUserModel { Name = "Владелец", Email = "OWN@example.com", Role = "User", Blocked = false }, CancellationToken.None);
+
+        updated.Email.Should().Be("OWN@example.com");
+    }
+
+    /// <summary>
+    /// Пропуск обязательного признака блокировки — ошибка валидации (молчаливая разблокировка недопустима)
+    /// </summary>
+    [SkippableFact]
+    public async Task UpdateWithoutBlockedShouldThrowValidation()
+    {
+        SkipIfUnavailable();
+        var user = await SeedUser("reader");
+        var act = () => Users.Update(user.Id, new UpdateUserModel { Name = "reader", Role = "User", Blocked = null }, CancellationToken.None);
+        await act.Should().ThrowAsync<DumaLensValidationException>();
+    }
+
+    /// <summary>
+    /// Номер страницы сверх верхней границы — ошибка валидации (защита Skip от переполнения)
+    /// </summary>
+    [SkippableFact]
+    public async Task GetPageWithOverflowPageShouldThrowValidation()
+    {
+        SkipIfUnavailable();
+        var act = () => Users.GetPage(new UserListQueryModel { Page = 100_001, PageSize = 100 }, CancellationToken.None);
+        await act.Should().ThrowAsync<DumaLensValidationException>();
+    }
 }

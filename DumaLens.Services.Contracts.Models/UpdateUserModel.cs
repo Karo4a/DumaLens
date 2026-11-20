@@ -21,9 +21,9 @@ public class UpdateUserModel
     public string Role { get; set; } = string.Empty;
 
     /// <summary>
-    /// Пользователь заблокирован
+    /// Пользователь заблокирован (обязательное поле: пропуск в запросе недопустим)
     /// </summary>
-    public bool Blocked { get; set; }
+    public bool? Blocked { get; set; }
 
     /// <summary>
     /// Заметка администратора

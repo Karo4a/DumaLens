@@ -14,6 +14,12 @@ namespace DumaLens.Services.Auth;
 /// </remarks>
 public class TokenService : ITokenService, IServiceAnchor
 {
+    /// <summary>
+    /// Клейм признака временного пароля: авторизация Api ограничивает доступ к не-auth эндпоинтам,
+    /// пока пароль не сменён (принуждение смены на уровне Api, а не только Web UI)
+    /// </summary>
+    public const string TemporaryPasswordClaimType = "pwd_temp";
+
     private readonly AuthOptions options;
     private readonly IDateTimeProvider dateTimeProvider;
 
@@ -39,6 +45,7 @@ public class TokenService : ITokenService, IServiceAnchor
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new("role", user.Role.ToString()),
             new("security_stamp", user.SecurityStamp.ToString()),
+            new(TemporaryPasswordClaimType, user.PasswordIsTemporary ? "true" : "false"),
         };
         var signKey = new SymmetricSecurityKey(Convert.FromBase64String(options.SigningKey));
         var now = dateTimeProvider.UtcNow().UtcDateTime;

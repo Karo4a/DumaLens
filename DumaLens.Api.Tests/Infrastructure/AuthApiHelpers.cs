@@ -23,7 +23,7 @@ internal static class AuthApiHelpers
     /// <summary>
     /// Создаёт пользователя напрямую в базе тестового хоста
     /// </summary>
-    internal static async Task<User> SeedUser(DumaLensContext context, string login, Role role = Role.User, string password = DefaultPassword, bool blocked = false)
+    internal static async Task<User> SeedUser(DumaLensContext context, string login, Role role = Role.User, string password = DefaultPassword, bool blocked = false, bool temporary = false)
     {
         var salt = SecurityHelper.GenerateSalt();
         var user = new User
@@ -35,6 +35,7 @@ internal static class AuthApiHelpers
             Name = login,
             PasswordSalt = salt,
             PasswordHash = SecurityHelper.HashPassword(password, salt),
+            PasswordIsTemporary = temporary,
             SecurityStamp = Guid.NewGuid(),
             RoleId = UserRolesDefault.DefaultRoleToGuid(role),
             Blocked = blocked,

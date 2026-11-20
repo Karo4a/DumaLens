@@ -248,8 +248,10 @@ dumalens create-admin --login <логин> --name <имя> [--email <почта>
 | `POST /api/auth/refresh` | refresh-токен | ротация пары токенов |
 | `POST /api/auth/logout` | аутентифицирован | отзыв refresh |
 | `GET /api/auth/me` | аутентифицирован | профиль: id, login, name, роль |
-| `POST /api/auth/change-password` | аутентифицирован | смена пароля (меняет SecurityStamp) |
-| `GET/POST/PUT /api/users`, `POST /api/users/{id}/reset-password` | Администратор | управление пользователями и ролями |
+| `POST /api/auth/change-password` | аутентифицирован | смена пароля (меняет SecurityStamp); rate limit |
+| `GET/POST/PUT /api/users`, `POST /api/users/{id}/reset-password` | Администратор | управление пользователями и ролями; создание — 201; `GET` без параметров — page=1, pageSize=20; `PUT` требует `blocked`; номер страницы ограничен `PageMax` |
+
+Пока пароль пользователя временный, не-auth эндпоинты возвращают 403 «Требуется смена временного пароля» (auth-эндпоинты и публичное чтение доступны).
 
 ### 5.5. v1.1/v1.2 (контракт уточняется на этапе)
 

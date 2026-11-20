@@ -64,6 +64,7 @@ public class TokenServiceTests
         jwt.GetClaim("name").Value.Should().Be(user.Login);
         jwt.GetClaim("role").Value.Should().Be("Administrator");
         jwt.GetClaim("security_stamp").Value.Should().Be(user.SecurityStamp.ToString());
+        jwt.GetClaim("pwd_temp").Value.Should().Be("false");
         jwt.GetClaim("jti").Value.Should().NotBeNullOrEmpty();
         jwt.Alg.Should().Be(SecurityAlgorithms.HmacSha256);
     }
@@ -113,5 +114,24 @@ public class TokenServiceTests
         ITokenService service = new TokenService(new AuthOptions(), new TestDateTimeProvider(Now));
         var act = () => service.CreateAccessToken(user);
         act.Should().Throw<InvalidOperationException>();
+    }
+
+    /// <summary>
+    /// Временный пароль отражается в клейме pwd_temp (принуждение смены на уровне авторизации Api)
+    /// </summary>
+    [Fact]
+    public void CreateAccessTokenShouldCarryTemporaryPasswordFlag()
+    {
+        var temporaryUser = new UserDbModel
+        {
+            Id = Guid.NewGuid(),
+            Login = "fresh",
+            Role = Role.User,
+            SecurityStamp = Guid.NewGuid(),
+            PasswordIsTemporary = true,
+        };
+        ITokenService service = new TokenService(options, new TestDateTimeProvider(Now));
+        var jwt = new JsonWebTokenHandler().ReadJsonWebToken(service.CreateAccessToken(temporaryUser));
+        jwt.GetClaim("pwd_temp").Value.Should().Be("true");
     }
 }

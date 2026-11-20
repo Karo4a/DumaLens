@@ -1459,8 +1459,8 @@ namespace DumaLens.Context.Migrations
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()
-                        .HasMaxLength(44)
-                        .HasColumnType("character varying(44)");
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
 
                     b.Property<bool>("PasswordIsTemporary")
                         .HasColumnType("boolean");
@@ -1800,6 +1800,15 @@ namespace DumaLens.Context.Migrations
                     b.Navigation("Convocation");
 
                     b.Navigation("Faction");
+                });
+
+            modelBuilder.Entity("DumaLens.Entities.RefreshToken", b =>
+                {
+                    b.HasOne("DumaLens.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("DumaLens.Entities.User", b =>

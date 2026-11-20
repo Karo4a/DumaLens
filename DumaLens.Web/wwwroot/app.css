@@ -198,6 +198,7 @@ select.ctl option { background:var(--surface); color:var(--text); }
 .auth-submit { width: 100%; }
 .auth-error { color: var(--r-against); font-size: 13px; }
 .auth-info { font-size: 13px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 12px; }
+.auth-hint { font-size: 12px; margin: 10px 0 0; }
 .reset-result { margin-bottom: 14px; }
 .reset-result code { font-weight: 700; font-size: 14px; }
 .profile-card { max-width: 560px; padding: 20px; display: flex; flex-direction: column; gap: 14px; align-items: flex-start; }

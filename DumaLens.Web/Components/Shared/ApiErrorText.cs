@@ -16,6 +16,7 @@ public static class ApiErrorText
         var message = TryReadMessage(exception.Response);
         return exception.StatusCode switch
         {
+            401 => message ?? "Сессия истекла. Войдите снова.",
             403 => "Недостаточно прав для этого действия",
             429 => "Слишком много запросов. Повторите позже",
             _ => message ?? $"Ошибка API ({exception.StatusCode})",

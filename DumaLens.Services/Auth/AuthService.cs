@@ -8,17 +8,24 @@ using DumaLens.Repositories.Contracts.WriteRepositories;
 using DumaLens.Services.Contracts;
 using DumaLens.Services.Contracts.Exceptions;
 using DumaLens.Services.Contracts.Models;
+using DumaLens.Services.Infrastructure;
+using Microsoft.EntityFrameworkCore;
 
 namespace DumaLens.Services.Auth;
 
 /// <inheritdoc cref="IAuthService"/>
 /// <remarks>
 /// Ротация refresh-токенов (ADR-13): старый токен отзывается, выпускается новая пара.
-/// Повторное использование отозванного токена отзывает все сессии пользователя и меняет
-/// метку безопасности (защита от кражи). Смена пароля и блокировка меняют метку безопасности.
+/// Повторное использование отозванного токена вне grace-окна отзывает все сессии пользователя
+/// и меняет метку безопасности (защита от кражи); внутри окна — гонка параллельных обновлений,
+/// выпускается новая пара. Смена пароля и блокировка меняют метку безопасности.
+/// Конкурентные login/refresh одного пользователя сериализуются повтором на уникальном индексе.
 /// </remarks>
 public class AuthService : IAuthService, IServiceAnchor
 {
+    private const int MaxConcurrencyRetries = 2;
+    private const string GenericLoginError = "Неверный логин или пароль";
+
     private readonly IValidateService validateService;
     private readonly IUserReadRepository userReadRepository;
     private readonly IUserWriteRepository userWriteRepository;
@@ -29,6 +36,7 @@ public class AuthService : IAuthService, IServiceAnchor
     private readonly IDateTimeProvider dateTimeProvider;
     private readonly AuthOptions options;
     private readonly IMapper mapper;
+    private (string Salt, string Hash)? dummyCredentials;
 
     /// <summary>
     /// Конструктор
@@ -63,27 +71,25 @@ public class AuthService : IAuthService, IServiceAnchor
         var user = await userReadRepository.GetByLogin(model.Login.Trim(), cancellationToken);
         if (user == null)
         {
-            throw new DumaLensUnauthorizedException("Неверный логин или пароль");
+            BurnDummyVerification(model.Password);
+            throw new DumaLensUnauthorizedException(GenericLoginError);
         }
+        // Единое сообщение для всех причин отказа: существование и состояние учётной записи не раскрываются
         if (user.Blocked)
         {
-            throw new DumaLensUnauthorizedException("Учётная запись заблокирована");
+            throw new DumaLensUnauthorizedException(GenericLoginError);
         }
         var now = dateTimeProvider.UtcNow();
         if (IsLockedOut(user, now))
         {
-            throw new DumaLensUnauthorizedException($"Слишком много неудачных попыток входа. Повторите через {options.LoginLockoutMinutes} минут");
+            throw new DumaLensUnauthorizedException(GenericLoginError);
         }
         if (!SecurityHelper.VerifyPassword(model.Password, user.PasswordSalt, user.PasswordHash, options.PasswordIterations))
         {
             await RegisterFailedAttempt(user, now, cancellationToken);
-            throw new DumaLensUnauthorizedException("Неверный логин или пароль");
+            throw new DumaLensUnauthorizedException(GenericLoginError);
         }
-        var entity = mapper.Map<User>(user);
-        entity.LoginAttemptFailedCount = 0;
-        entity.LastFailedLoginAt = null;
-        userWriteRepository.Edit(entity);
-        return await IssueSession(user, now, cancellationToken);
+        return await IssueSessionWithRetry(user, now, resetAttempts: true, cancellationToken);
     }
 
     async Task<AuthResultModel> IAuthService.Refresh(RefreshRequestModel model, CancellationToken cancellationToken)
@@ -100,14 +106,25 @@ public class AuthService : IAuthService, IServiceAnchor
         {
             throw new DumaLensUnauthorizedException("Срок действия токена обновления истёк");
         }
+        var user = await userReadRepository.GetById(stored.UserId, cancellationToken);
+        if (user == null)
+        {
+            throw new DumaLensUnauthorizedException("Учётная запись недоступна");
+        }
         if (stored.RevokedAt != null)
         {
-            // Повторное использование отозванного токена — признак кражи: отзываем все сессии
+            var grace = TimeSpan.FromSeconds(options.RefreshReuseGraceSeconds);
+            if (now - stored.RevokedAt.Value < grace && stored.SecurityStamp == user.SecurityStamp && !user.Blocked)
+            {
+                // Гонка параллельных обновлений (вкладки/устройства с общим хранилищем токенов):
+                // токен отозван только что и метка актуальна — выпускаем новую пару вместо отзыва сессий
+                return await IssueSessionWithRetry(user, now, resetAttempts: false, cancellationToken);
+            }
+            // Повторное использование отозванного токена вне grace-окна — признак кражи
             await RevokeAllSessions(stored.UserId, now, rotateStamp: true, cancellationToken);
             throw new DumaLensUnauthorizedException("Токен обновления отозван: все сессии завершены");
         }
-        var user = await userReadRepository.GetById(stored.UserId, cancellationToken);
-        if (user == null || user.Blocked)
+        if (user.Blocked)
         {
             await RevokeToken(stored, now, cancellationToken);
             throw new DumaLensUnauthorizedException("Учётная запись недоступна");
@@ -117,12 +134,9 @@ public class AuthService : IAuthService, IServiceAnchor
             await RevokeToken(stored, now, cancellationToken);
             throw new DumaLensUnauthorizedException("Токен обновления отозван");
         }
-        if (user.PasswordIsTemporary)
-        {
-            await RevokeToken(stored, now, cancellationToken);
-            throw new DumaLensUnauthorizedException("Требуется смена временного пароля");
-        }
-        return await IssueSession(user, now, cancellationToken);
+        // Временный пароль не блокирует обновление: принуждение смены выполняется авторизацией Api
+        // (клейм pwd_temp), иначе смена пароля после истечения access-токена невозможна
+        return await IssueSessionWithRetry(user, now, resetAttempts: false, cancellationToken);
     }
 
     async Task IAuthService.Logout(Guid userId, CancellationToken cancellationToken)
@@ -139,8 +153,19 @@ public class AuthService : IAuthService, IServiceAnchor
         await validateService.Validate(model, cancellationToken);
         var user = await userReadRepository.GetById(userId, cancellationToken)
             ?? throw new DumaLensNotFoundException("Пользователь не найден");
+        var now = dateTimeProvider.UtcNow();
+        if (user.Blocked)
+        {
+            throw new DumaLensUnauthorizedException("Учётная запись заблокирована");
+        }
+        if (IsLockedOut(user, now))
+        {
+            throw new DumaLensUnauthorizedException($"Слишком много неудачных попыток. Повторите через {options.LoginLockoutMinutes} минут");
+        }
         if (!SecurityHelper.VerifyPassword(model.CurrentPassword, user.PasswordSalt, user.PasswordHash, options.PasswordIterations))
         {
+            // Неудачные попытки смены пароля учитываются в том же счётчике блокировки, что и вход
+            await RegisterFailedAttempt(user, now, cancellationToken);
             throw new DumaLensUnauthorizedException("Неверный текущий пароль");
         }
         var entity = mapper.Map<User>(user);
@@ -152,7 +177,7 @@ public class AuthService : IAuthService, IServiceAnchor
         entity.LastFailedLoginAt = null;
         userWriteRepository.Edit(entity);
         // Смена метки безопасности инвалидирует все сессии; SaveChanges один на всю операцию
-        await RevokeAllSessions(userId, dateTimeProvider.UtcNow(), rotateStamp: false, cancellationToken);
+        await RevokeAllSessions(userId, now, rotateStamp: false, cancellationToken);
     }
 
     async Task<UserProfileModel> IAuthService.GetProfile(Guid userId, CancellationToken cancellationToken)
@@ -178,6 +203,30 @@ public class AuthService : IAuthService, IServiceAnchor
         await unitOfWork.SaveChangesAsync(cancellationToken);
     }
 
+    private async Task<AuthResultModel> IssueSessionWithRetry(UserDbModel user, DateTimeOffset now, bool resetAttempts, CancellationToken cancellationToken)
+    {
+        for (var attempt = 0; ; attempt++)
+        {
+            try
+            {
+                if (resetAttempts)
+                {
+                    var entity = mapper.Map<User>(user);
+                    entity.LoginAttemptFailedCount = 0;
+                    entity.LastFailedLoginAt = null;
+                    userWriteRepository.Edit(entity);
+                }
+                return await IssueSession(user, now, cancellationToken);
+            }
+            catch (DbUpdateException ex) when (attempt < MaxConcurrencyRetries && PostgresErrors.IsUniqueViolation(ex))
+            {
+                // Параллельный login/refresh уже занял уникальный индекс активной сессии:
+                // сбрасываем отслеживание и перечитываем состояние заново
+                ((DbContext)unitOfWork).ChangeTracker.Clear();
+            }
+        }
+    }
+
     private async Task<AuthResultModel> IssueSession(UserDbModel user, DateTimeOffset now, CancellationToken cancellationToken)
     {
         var previous = await refreshTokenReadRepository.GetActiveByUserId(user.Id, cancellationToken);
@@ -190,7 +239,6 @@ public class AuthService : IAuthService, IServiceAnchor
         var rawToken = SecurityHelper.GenerateRefreshToken();
         var refresh = new RefreshToken
         {
-            Id = Guid.NewGuid(),
             UserId = user.Id,
             TokenHash = SecurityHelper.HashRefreshToken(rawToken),
             SecurityStamp = user.SecurityStamp,
@@ -235,5 +283,17 @@ public class AuthService : IAuthService, IServiceAnchor
             }
         }
         await unitOfWork.SaveChangesAsync(cancellationToken);
+    }
+
+    private void BurnDummyVerification(string password)
+    {
+        // Неизвестный логин проверяется против фиктивного хэша: время ответа не выдаёт существование пользователя
+        if (dummyCredentials == null)
+        {
+            var salt = SecurityHelper.GenerateSalt();
+            dummyCredentials = (salt, SecurityHelper.HashPassword("dummy-password", salt, options.PasswordIterations));
+        }
+        var (dummySalt, dummyHash) = dummyCredentials.Value;
+        SecurityHelper.VerifyPassword(password, dummySalt, dummyHash, options.PasswordIterations);
     }
 }

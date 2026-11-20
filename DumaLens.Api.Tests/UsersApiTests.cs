@@ -90,7 +90,7 @@ public class UsersApiTests
         var newLogin = $"users_new_{Guid.NewGuid():N}";
         var create = await client.PostWithBearer("/api/users",
             new { login = newLogin, name = "Новый пользователь", role = "User", password = "TempPassword123" }, adminToken);
-        create.StatusCode.Should().Be(HttpStatusCode.OK);
+        create.StatusCode.Should().Be(HttpStatusCode.Created);
         var created = await create.Content.ReadFromJsonAsync<JsonDocument>();
         var userId = created!.RootElement.GetProperty("id").GetGuid();
         created.RootElement.GetProperty("passwordIsTemporary").GetBoolean().Should().BeTrue();
@@ -182,5 +182,61 @@ public class UsersApiTests
             Headers = { Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", adminToken) },
         });
         update.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    /// <summary>
+    /// Без параметров пагинации применяются значения по умолчанию (page=1, pageSize=20)
+    /// </summary>
+    [SkippableFact]
+    public async Task GetPageWithoutParamsShouldUseDefaults()
+    {
+        Skip.IfNot(PostgreSqlAvailability.IsAvailable, "PostgreSQL недоступен — интеграционный тест пропущен (ADR-3)");
+        var adminLogin = $"users_def_admin_{Guid.NewGuid():N}";
+        await AuthApiHelpers.SeedUser(fixture.Context, adminLogin, Role.Administrator);
+        var adminTokens = await client.LoginAsync(adminLogin);
+        var adminToken = adminTokens.GetProperty("accessToken").GetString()!;
+
+        var response = await client.GetWithBearer("/api/users", adminToken);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var page = await response.Content.ReadFromJsonAsync<JsonDocument>();
+        page!.RootElement.GetProperty("page").GetInt32().Should().Be(1);
+        page.RootElement.GetProperty("pageSize").GetInt32().Should().Be(20);
+    }
+
+    /// <summary>
+    /// Пропуск обязательного признака блокировки в PUT — 422 (молчаливая разблокировка недопустима)
+    /// </summary>
+    [SkippableFact]
+    public async Task UpdateWithoutBlockedShouldReturn422()
+    {
+        Skip.IfNot(PostgreSqlAvailability.IsAvailable, "PostgreSQL недоступен — интеграционный тест пропущен (ADR-3)");
+        var adminLogin = $"users_noblocked_admin_{Guid.NewGuid():N}";
+        var admin = await AuthApiHelpers.SeedUser(fixture.Context, adminLogin, Role.Administrator);
+        var adminTokens = await client.LoginAsync(adminLogin);
+        var adminToken = adminTokens.GetProperty("accessToken").GetString()!;
+
+        // blocked намеренно отсутствует в теле запроса
+        var update = await client.SendAsync(new HttpRequestMessage(HttpMethod.Put, $"/api/users/{admin.Id}")
+        {
+            Content = JsonContent.Create(new { name = adminLogin, role = "Administrator" }),
+            Headers = { Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", adminToken) },
+        });
+        update.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+    }
+
+    /// <summary>
+    /// Номер страницы сверх верхней границы — 422, а не 500 от переполнения OFFSET
+    /// </summary>
+    [SkippableFact]
+    public async Task GetPageWithOverflowPageShouldReturn422()
+    {
+        Skip.IfNot(PostgreSqlAvailability.IsAvailable, "PostgreSQL недоступен — интеграционный тест пропущен (ADR-3)");
+        var adminLogin = $"users_overflow_admin_{Guid.NewGuid():N}";
+        await AuthApiHelpers.SeedUser(fixture.Context, adminLogin, Role.Administrator);
+        var adminTokens = await client.LoginAsync(adminLogin);
+        var adminToken = adminTokens.GetProperty("accessToken").GetString()!;
+
+        var response = await client.GetWithBearer("/api/users?page=100001&pageSize=100", adminToken);
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
 }

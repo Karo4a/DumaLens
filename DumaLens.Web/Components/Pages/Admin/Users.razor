@@ -48,7 +48,7 @@
             </label>
             <label class="field">
                 <span>Временный пароль (не менее 8 символов)</span>
-                <input class="ctl" @bind="createPassword" @bind:event="oninput" autocomplete="new-password" />
+                <input class="ctl" type="password" @bind="createPassword" @bind:event="oninput" autocomplete="new-password" />
             </label>
         </div>
         <button class="btn-primary" type="submit" disabled="@busy">@(busy ? "Сохранение…" : "Создать")</button>

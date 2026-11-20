@@ -360,6 +360,8 @@ internal class Program
                 await using var provider = ImporterHost.BuildServiceProvider(connectionString, logFilePath: null);
                 await using var scope = provider.CreateAsyncScope();
                 var context = scope.ServiceProvider.GetRequiredService<DumaLensContext>();
+                // Наполненная база: миграции могут быть долгими (индексы на больших таблицах) — дефолтные 30 с не годятся
+                context.Database.SetCommandTimeout(TimeSpan.FromMinutes(30));
                 await context.Database.MigrateAsync(cancellationToken);
                 var userService = scope.ServiceProvider.GetRequiredService<IUserService>();
                 var temporaryPassword = password ?? SecurityHelper.GenerateTemporaryPassword();
@@ -382,7 +384,7 @@ internal class Program
             }
             catch (Exception exception)
             {
-                Console.Error.WriteLine($"create-admin: {exception.Message}");
+                Console.Error.WriteLine($"create-admin: {exception}");
                 invocationContext.ExitCode = 1;
             }
         });

@@ -21,6 +21,15 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.ConfigureTestAppConfiguration();
+        builder.ConfigureAppConfiguration((_, config) => config.AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            // HTTP-тесты отзыва при повторном использовании детерминированы: grace-окно отключено
+            // (поведение окна проверяется в Services.Tests с управляемыми часами)
+            ["Auth:RefreshReuseGraceSeconds"] = "0",
+            // Функциональные тесты не должны упираться в rate limit общего хоста (все запросы с одного IP);
+            // поведение лимита проверяется в LoginRateLimitTests на отдельном хосте с лимитом 3
+            ["Auth:LoginRateLimitPermitLimit"] = "10000",
+        }));
         builder.ConfigureServices(services =>
         {
             var descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<DumaLensContext>));

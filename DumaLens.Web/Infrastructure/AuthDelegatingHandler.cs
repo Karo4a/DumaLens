@@ -11,9 +11,14 @@ namespace DumaLens.Web.Infrastructure;
 /// </summary>
 /// <remarks>
 /// Обновление выполняется отдельным HttpClient без этого обработчика (без рекурсии) и защищено
-/// семафором: параллельные запросы цепи не запускают гонку обновлений (повторное использование
-/// refresh-токена отозвало бы все сессии). Если параллельный запрос уже обновил пару, повтор
-/// использует свежий access-токен без обращения к Api.
+/// общим семафором цепи (<see cref="RefreshLock"/>): все NSwag-клиенты цепи используют один экземпляр,
+/// поэтому параллельные запросы разных клиентов выполняют ровно один refresh (гонка обновлений
+/// предъявила бы отозванный токен и отозвала все сессии). Если параллельный запрос уже обновил пару,
+/// повтор использует свежий access-токен без обращения к Api.
+/// Запросы логина и обновления идут без Bearer и без 401-повтора: их 401 — неверные учётные данные
+/// либо недействительный refresh, а не протухший access-токен.
+/// Токены очищаются только при явном отказе refresh (401/400); временные ошибки Api (5xx/429, сеть,
+/// таймаут) валидную сессию не разрушают.
 /// </remarks>
 public class AuthDelegatingHandler : DelegatingHandler
 {
@@ -21,20 +26,25 @@ public class AuthDelegatingHandler : DelegatingHandler
 
     private readonly IClientTokenStore tokenStore;
     private readonly IHttpClientFactory clientFactory;
-    private readonly SemaphoreSlim refreshLock = new(1, 1);
+    private readonly RefreshLock refreshLock;
 
     /// <summary>
     /// Конструктор
     /// </summary>
-    public AuthDelegatingHandler(IClientTokenStore tokenStore, IHttpClientFactory clientFactory)
+    public AuthDelegatingHandler(IClientTokenStore tokenStore, IHttpClientFactory clientFactory, RefreshLock refreshLock)
     {
         this.tokenStore = tokenStore;
         this.clientFactory = clientFactory;
+        this.refreshLock = refreshLock;
     }
 
     /// <inheritdoc cref="DelegatingHandler.SendAsync"/>
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
+        if (IsAuthFlowPath(request.RequestUri))
+        {
+            return await base.SendAsync(request, cancellationToken);
+        }
         var accessToken = await tokenStore.GetAccessTokenAsync();
         SetBearer(request, accessToken);
         var response = await base.SendAsync(request, cancellationToken);
@@ -53,6 +63,14 @@ public class AuthDelegatingHandler : DelegatingHandler
         return await base.SendAsync(retry, cancellationToken);
     }
 
+    private static bool IsAuthFlowPath(Uri? requestUri)
+    {
+        var path = requestUri?.AbsolutePath;
+        return path != null
+            && (path.EndsWith("/api/auth/login", StringComparison.OrdinalIgnoreCase)
+                || path.EndsWith("/api/auth/refresh", StringComparison.OrdinalIgnoreCase));
+    }
+
     private static void SetBearer(HttpRequestMessage request, string? accessToken)
     {
         if (!string.IsNullOrEmpty(accessToken))
@@ -63,7 +81,7 @@ public class AuthDelegatingHandler : DelegatingHandler
 
     private async Task<string?> TryRefreshAsync(string? tokenAtSend, CancellationToken cancellationToken)
     {
-        await refreshLock.WaitAsync(cancellationToken);
+        await refreshLock.Semaphore.WaitAsync(cancellationToken);
         try
         {
             var current = await tokenStore.GetAccessTokenAsync();
@@ -83,9 +101,15 @@ public class AuthDelegatingHandler : DelegatingHandler
                 "api/auth/refresh",
                 new RefreshRequestApiModel { RefreshToken = refreshToken },
                 cancellationToken);
+            if (refreshResponse.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.BadRequest)
+            {
+                // Refresh недействителен/отозван: сессия завершена
+                await tokenStore.ClearAsync();
+                return null;
+            }
             if (!refreshResponse.IsSuccessStatusCode)
             {
-                await tokenStore.ClearAsync();
+                // Временная ошибка Api (5xx/429): токены сохраняем — сессия ещё действительна
                 return null;
             }
             var payload = await refreshResponse.Content.ReadFromJsonAsync<AuthResponseApiModel>(cancellationToken: cancellationToken);
@@ -99,11 +123,17 @@ public class AuthDelegatingHandler : DelegatingHandler
         }
         catch (HttpRequestException)
         {
+            // Api недоступен: токены сохраняем
+            return null;
+        }
+        catch (TaskCanceledException)
+        {
+            // Таймаут запроса обновления: токены сохраняем
             return null;
         }
         finally
         {
-            refreshLock.Release();
+            refreshLock.Semaphore.Release();
         }
     }
 

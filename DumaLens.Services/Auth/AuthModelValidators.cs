@@ -139,6 +139,10 @@ public class UpdateUserModelValidator : AbstractValidator<UpdateUserModel>
             .Must(role => RoleHelper.Parse(role) != null)
             .WithMessage((x, role) => $"Неизвестная роль: «{role}». Допустимы: User, Moderator, Administrator");
 
+        RuleFor(x => x.Blocked)
+            .NotNull()
+            .WithMessage("Признак блокировки обязателен");
+
         RuleFor(x => x.Note)
             .MaximumLength(UserValidationConstants.NoteMaxLength)
             .WithMessage($"Длина заметки не должна превышать {UserValidationConstants.NoteMaxLength} символов")
@@ -157,8 +161,8 @@ public class UserListQueryModelValidator : AbstractValidator<UserListQueryModel>
     public UserListQueryModelValidator()
     {
         RuleFor(x => x.Page)
-            .GreaterThanOrEqualTo(UserValidationConstants.PageMin)
-            .WithMessage($"Номер страницы должен быть не меньше {UserValidationConstants.PageMin}");
+            .InclusiveBetween(UserValidationConstants.PageMin, UserValidationConstants.PageMax)
+            .WithMessage($"Номер страницы должен быть в диапазоне от {UserValidationConstants.PageMin} до {UserValidationConstants.PageMax}");
 
         RuleFor(x => x.PageSize)
             .InclusiveBetween(UserValidationConstants.PageSizeMin, UserValidationConstants.PageSizeMax)

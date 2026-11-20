@@ -37,7 +37,8 @@ public static class ImporterHost
         services.AddScoped<IWriter>(provider => provider.GetRequiredService<DumaLensContext>());
         services.AddScoped<IUnitOfWork>(provider => provider.GetRequiredService<DumaLensContext>());
         services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
-        // Настройки auth по умолчанию: CLI create-admin использует хэширование паролей (Э9)
+        // Настройки auth по умолчанию: CLI create-admin использует хэширование паролей (Э9).
+        // Число итераций хранится в префиксе хэша, поэтому отличие от конфигурации Api не ломает вход
         services.AddSingleton(new DumaLens.Services.Contracts.AuthOptions());
         services.AddSingleton<AutoMapper.IMapper>(_ =>
         {

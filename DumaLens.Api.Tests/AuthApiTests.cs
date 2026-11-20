@@ -158,6 +158,61 @@ public class AuthApiTests
     }
 
     /// <summary>
+    /// Публичный эндпоинт с недействительным токеном остаётся доступным ([AllowAnonymous] не проходит авторизацию)
+    /// </summary>
+    [SkippableFact]
+    public async Task PublicReadingWithInvalidTokenShouldStayAnonymous()
+    {
+        Skip.IfNot(PostgreSqlAvailability.IsAvailable, "PostgreSQL недоступен — интеграционный тест пропущен (ADR-3)");
+        var response = await client.GetWithBearer("/api/stats/overview", "not-a-jwt");
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    /// <summary>
+    /// Временный пароль: auth-эндпоинты и публичное чтение доступны, обновление работает,
+    /// не-auth защищённые эндпоинты — 403 до смены пароля, после смены — полный доступ по роли
+    /// </summary>
+    [SkippableFact]
+    public async Task TemporaryPasswordShouldRestrictNonAuthEndpoints()
+    {
+        Skip.IfNot(PostgreSqlAvailability.IsAvailable, "PostgreSQL недоступен — интеграционный тест пропущен (ADR-3)");
+        var login = $"auth_temp_{Guid.NewGuid():N}";
+        await AuthApiHelpers.SeedUser(fixture.Context, login, Role.Administrator, temporary: true);
+        var tokens = await client.LoginAsync(login);
+        var accessToken = tokens.GetProperty("accessToken").GetString()!;
+        var refreshToken = tokens.GetProperty("refreshToken").GetString()!;
+        tokens.GetProperty("user").GetProperty("passwordIsTemporary").GetBoolean().Should().BeTrue();
+
+        // Auth-эндпоинты освобождены от ограничения
+        var me = await client.GetWithBearer("/api/auth/me", accessToken);
+        me.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        // Обновление разрешено (иначе смена после истечения access была бы невозможна)
+        var refresh = await client.PostAsJsonAsync("/api/auth/refresh", new { refreshToken });
+        refresh.StatusCode.Should().Be(HttpStatusCode.OK);
+        var refreshed = await refresh.Content.ReadFromJsonAsync<System.Text.Json.JsonDocument>();
+        var newAccess = refreshed!.RootElement.GetProperty("accessToken").GetString()!;
+
+        // Публичное чтение с токеном временного пароля не ломается
+        var pub = await client.GetWithBearer("/api/stats/overview", newAccess);
+        pub.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        // Не-auth защищённый эндпоинт — 403 с сообщением о смене
+        var users = await client.GetWithBearer("/api/users?page=1&pageSize=20", newAccess);
+        users.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        var forbidden = await users.Content.ReadFromJsonAsync<System.Text.Json.JsonDocument>();
+        forbidden!.RootElement.GetProperty("message").GetString().Should().Be("Требуется смена временного пароля");
+
+        // Смена пароля снимает ограничение
+        var change = await client.PostWithBearer("/api/auth/change-password",
+            new { currentPassword = AuthApiHelpers.DefaultPassword, newPassword = "NewPassword456" }, newAccess);
+        change.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        var after = await client.LoginAsync(login, "NewPassword456");
+        var usersAfter = await client.GetWithBearer("/api/users?page=1&pageSize=20", after.GetProperty("accessToken").GetString()!);
+        usersAfter.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    /// <summary>
     /// Испорченный токен (изменённая полезная нагрузка) не проходит проверку подписи — 401
     /// </summary>
     [SkippableFact]

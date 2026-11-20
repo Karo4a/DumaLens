@@ -56,8 +56,8 @@ public class VoteSearchQueryModelValidator : AbstractValidator<VoteSearchQueryMo
             .WithMessage("dateFrom не может быть позже dateTo");
 
         RuleFor(x => x.Page)
-            .GreaterThanOrEqualTo(VoteSearchValidationConstants.PageMin)
-            .WithMessage($"Номер страницы должен быть не меньше {VoteSearchValidationConstants.PageMin}");
+            .InclusiveBetween(VoteSearchValidationConstants.PageMin, VoteSearchValidationConstants.PageMax)
+            .WithMessage($"Номер страницы должен быть в диапазоне от {VoteSearchValidationConstants.PageMin} до {VoteSearchValidationConstants.PageMax}");
 
         RuleFor(x => x.PageSize)
             .InclusiveBetween(VoteSearchValidationConstants.PageSizeMin, VoteSearchValidationConstants.PageSizeMax)

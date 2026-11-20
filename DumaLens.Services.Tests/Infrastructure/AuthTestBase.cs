@@ -50,11 +50,14 @@ public abstract class AuthTestBase : IAsyncLifetime
     protected TestDateTimeProvider Clock { get; } = new(StartTime);
 
     /// <summary>
-    /// Настройки auth (итерации PBKDF2 — боевые 100 000, ADR-12)
+    /// Настройки auth (итерации PBKDF2 — боевые 100 000, ADR-12).
+    /// Grace-окно отключено по умолчанию: тесты отзыва детерминированы без сдвига часов;
+    /// поведение окна проверяется отдельными тестами, задающими значение явно
     /// </summary>
     protected AuthOptions Options { get; } = new AuthOptions
     {
         SigningKey = TestSigningKey,
+        RefreshReuseGraceSeconds = 0,
     };
 
     /// <summary>
@@ -111,7 +114,7 @@ public abstract class AuthTestBase : IAsyncLifetime
         UserRead = new UserReadRepository(context);
         UserWrite = new UserWriteRepository(context, Clock);
         RefreshRead = new RefreshTokenReadRepository(context);
-        RefreshWrite = new RefreshTokenWriteRepository(context, Clock);
+        RefreshWrite = new RefreshTokenWriteRepository(context, context, Clock);
         var roleRead = new UserRoleReadRepository(context);
         Tokens = new TokenService(Options, Clock);
         Auth = new AuthService(validateService, UserRead, UserWrite, RefreshRead, RefreshWrite, context, Tokens, Clock, Options, Mapper);
@@ -133,6 +136,39 @@ public abstract class AuthTestBase : IAsyncLifetime
     /// </summary>
     protected void SkipIfUnavailable()
         => Skip.If(fixture.SkipReason != null, fixture.SkipReason);
+
+    /// <summary>
+    /// Независимый сервис аутентификации на отдельном контексте той же базы: DbContext не потокобезопасен,
+    /// конкурентные сценарии выполняют операции через независимые контексты (как разные запросы к Api)
+    /// </summary>
+    protected IAuthService CreateAuthOnNewContext(out DumaLensContext context)
+    {
+        context = fixture.CreateContext();
+        var mapper = new MapperConfiguration(profile => profile.AddProfile<ServiceProfile>()).CreateMapper();
+        var validateService = new ValidateService();
+        var userRead = new UserReadRepository(context);
+        var userWrite = new UserWriteRepository(context, Clock);
+        var refreshRead = new RefreshTokenReadRepository(context);
+        var refreshWrite = new RefreshTokenWriteRepository(context, context, Clock);
+        var tokens = new TokenService(Options, Clock);
+        return new AuthService(validateService, userRead, userWrite, refreshRead, refreshWrite, context, tokens, Clock, Options, mapper);
+    }
+
+    /// <summary>
+    /// Независимый сервис пользователей на отдельном контексте той же базы (конкурентные сценарии)
+    /// </summary>
+    protected IUserService CreateUsersOnNewContext(out DumaLensContext context)
+    {
+        context = fixture.CreateContext();
+        var mapper = new MapperConfiguration(profile => profile.AddProfile<ServiceProfile>()).CreateMapper();
+        var validateService = new ValidateService();
+        var userRead = new UserReadRepository(context);
+        var userWrite = new UserWriteRepository(context, Clock);
+        var roleRead = new UserRoleReadRepository(context);
+        var refreshRead = new RefreshTokenReadRepository(context);
+        var refreshWrite = new RefreshTokenWriteRepository(context, context, Clock);
+        return new UserService(validateService, userRead, userWrite, roleRead, refreshRead, refreshWrite, context, Clock, Options, mapper);
+    }
 
     /// <summary>
     /// Создаёт пользователя напрямую в базе (состояния для arrange: блокировка, временный пароль, метка)

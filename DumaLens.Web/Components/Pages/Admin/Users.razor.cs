@@ -21,6 +21,7 @@ public partial class Users : ComponentBase, IDisposable
     private ICollection<UserApiModel> items = [];
     private int totalCount;
     private int page = 1;
+    private int loadSequence;
     private bool loading = true;
     private bool busy;
     private bool loaded;
@@ -69,26 +70,40 @@ public partial class Users : ComponentBase, IDisposable
 
     private async Task LoadAsync()
     {
+        var sequence = ++loadSequence;
         loading = true;
         error = null;
         try
         {
             var result = await UsersClient.GetPageAsync(page, PageSize);
-            items = result.Items;
-            totalCount = result.TotalCount;
-            loaded = true;
+            // Ответ устаревшего запроса (быстрая смена страницы) не перезаписывает свежий
+            if (sequence == loadSequence)
+            {
+                items = result.Items;
+                totalCount = result.TotalCount;
+                loaded = true;
+            }
         }
         catch (ApiException exception)
         {
-            error = ApiErrorText.Describe(exception);
+            if (sequence == loadSequence)
+            {
+                error = ApiErrorText.Describe(exception);
+            }
         }
         catch (HttpRequestException)
         {
-            error = "API недоступен. Повторите позже.";
+            if (sequence == loadSequence)
+            {
+                error = "API недоступен. Повторите позже.";
+            }
         }
         finally
         {
-            loading = false;
+            if (sequence == loadSequence)
+            {
+                loading = false;
+            }
         }
     }
 

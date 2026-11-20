@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using DumaLens.Api.Infrastructure.Authorization;
 using DumaLens.Api.Models.Auth;
 using DumaLens.Api.Models.Exceptions;
 using DumaLens.Services.Contracts;
@@ -16,12 +17,18 @@ namespace DumaLens.Api.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Produces("application/json")]
+[AllowTemporaryPassword]
 public class AuthController : ControllerBase
 {
     /// <summary>
     /// Имя политики rate limit эндпоинта логина (фиксированное окно на IP)
     /// </summary>
     public const string LoginRateLimitPolicy = "LoginRateLimit";
+
+    /// <summary>
+    /// Имя политики rate limit эндпоинта смены пароля (фиксированное окно на IP, отдельный бюджет)
+    /// </summary>
+    public const string ChangePasswordRateLimitPolicy = "ChangePasswordRateLimit";
 
     private readonly IAuthService authService;
     private readonly IMapper mapper;
@@ -105,9 +112,11 @@ public class AuthController : ControllerBase
     /// <param name="cancellationToken">Токен отмены</param>
     [Authorize]
     [HttpPost("change-password")]
+    [EnableRateLimiting(ChangePasswordRateLimitPolicy)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ApiExceptionDetail), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ApiValidationExceptionDetail), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequestApiModel request, CancellationToken cancellationToken)
     {
         await authService.ChangePassword(GetUserId(), mapper.Map<ChangePasswordModel>(request), cancellationToken);

@@ -16,9 +16,9 @@ public static class UserValidationConstants
     public const int EmailMaxLength = 255;
 
     /// <summary>
-    /// Максимальная длина хэша пароля (PBKDF2-SHA256, base64)
+    /// Максимальная длина хэша пароля (формат «{итерации}.{base64 PBKDF2-SHA256}»: префикс итераций + 44 символа)
     /// </summary>
-    public const int PasswordHashMaxLength = 44;
+    public const int PasswordHashMaxLength = 64;
 
     /// <summary>
     /// Максимальная длина соли пароля (base64)
@@ -49,6 +49,16 @@ public static class UserValidationConstants
     /// Минимальный номер страницы списка пользователей
     /// </summary>
     public const int PageMin = 1;
+
+    /// <summary>
+    /// Максимальный номер страницы списка пользователей (защита Skip от переполнения int)
+    /// </summary>
+    public const int PageMax = 100_000;
+
+    /// <summary>
+    /// Размер страницы списка пользователей по умолчанию
+    /// </summary>
+    public const int PageSizeDefault = 20;
 
     /// <summary>
     /// Минимальный размер страницы списка пользователей
