@@ -47,6 +47,10 @@ public partial class VoteCard : ComponentBase
         {
             error = "Сервис поиска недоступен.";
         }
+        catch (TaskCanceledException)
+        {
+            error = "Сервис поиска недоступен.";
+        }
         finally
         {
             loading = false;

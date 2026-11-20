@@ -241,6 +241,41 @@ public class PageRenderTests
         html.Should().Contain("VIII созыв");
     }
 
+    [Fact]
+    public async Task Home_ApiTimeout_RendersErrorAndPartialData()
+    {
+        using var factory = new WebTestFactory();
+        factory.Stats.Setup(s => s.GetOverviewAsync()).ThrowsAsync(new TaskCanceledException("таймаут"));
+        factory.Convocations.Setup(c => c.GetAllAsync()).ReturnsAsync(TestData.Convocations());
+        var html = await GetHtml(factory, "/");
+        html.Should().Contain("Сервис поиска недоступен.");
+        html.Should().Contain("VIII созыв");
+    }
+
+    [Fact]
+    public async Task Search_ApiTimeout_RendersError()
+    {
+        using var factory = new WebTestFactory();
+        SetupReferences(factory);
+        factory.Votes
+            .Setup(v => v.SearchWithConditionsAsync(
+                It.IsAny<string?>(), It.IsAny<int?>(), It.IsAny<DateTimeOffset?>(), It.IsAny<DateTimeOffset?>(),
+                It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<string?>(),
+                It.IsAny<int?>(), It.IsAny<int?>(), It.IsAny<IEnumerable<FactionConditionRequestApiModel>?>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new TaskCanceledException("таймаут"));
+        var html = await GetHtml(factory, "/search?q=" + Uri.EscapeDataString("алкоголь"));
+        html.Should().Contain("Сервис поиска недоступен.");
+    }
+
+    [Fact]
+    public async Task VoteCard_ApiTimeout_RendersError()
+    {
+        using var factory = new WebTestFactory();
+        factory.Votes.Setup(v => v.GetDetailsAsync(126282)).ThrowsAsync(new TaskCanceledException("таймаут"));
+        var html = await GetHtml(factory, "/votes/126282");
+        html.Should().Contain("Сервис поиска недоступен.");
+    }
+
     private static bool MatchesS2(IEnumerable<FactionConditionRequestApiModel> conditions)
     {
         var list = conditions.ToList();

@@ -52,5 +52,10 @@ public class UserStateInitializer
             // Api недоступен: состояние остаётся анонимным, токены не трогаем
             userState.Clear();
         }
+        catch (TaskCanceledException)
+        {
+            // Api недоступен: состояние остаётся анонимным, токены не трогаем
+            userState.Clear();
+        }
     }
 }

@@ -101,6 +101,10 @@ else if (faction != null)
         {
             error = "Сервис поиска недоступен.";
         }
+        catch (TaskCanceledException)
+        {
+            error = "Сервис поиска недоступен.";
+        }
         finally
         {
             loading = false;

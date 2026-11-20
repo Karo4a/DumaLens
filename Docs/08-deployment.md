@@ -96,6 +96,86 @@ SDK содержит собственный MSBuild (для ветки 8.0.4xx �
 
 **Важно:** во время импорта Api должен быть остановлен — отключение FK-триггеров
 действует на все сеансы сервера (целостность в этот момент гарантирует импортёр).
+В обычном режиме (без `--bulk`) импорт и поиск работают параллельно — пакетные
+транзакции не блокируют читателей (НФТ-11, проверено на Э10).
+
+## Публикация хостов (развёртывание без SDK)
+
+Для постоянной эксплуатации хосты публикуются: на целевой машине нужен только
+**.NET 8 Runtime (ASP.NET Core Runtime)**, SDK и исходники не требуются (НФТ-08).
+
+1. Публикация на машине с SDK (из корня репозитория):
+   ```bat
+   dotnet publish DumaLens.Api -c Release -o publish\Api
+   dotnet publish DumaLens.Web -c Release -o publish\Web
+   ```
+   Публикация framework-dependent (RID не задаётся) — папки переносимы между
+   Windows/Linux с установленным Runtime 8. В Visual Studio 2022 то же самое
+   делается через «Опубликовать» (профиль папки).
+2. Скопировать `publish\Api` и `publish\Web` на целевую машину. Строка подключения
+   и ключ JWT задаются переменными окружения (в файлы не попадают, О-7):
+   ```bat
+   set ConnectionStrings__DefaultConnection=Host=localhost;Port=5432;Database=dumalens;Username=postgres;Password=***
+   set ASPNETCORE_ENVIRONMENT=Production
+   set Auth__SigningKey=<base64-ключ, генерация ниже>
+   ```
+3. Запуск двух хостов на разных портах (в отдельных окнах/службах):
+   ```bat
+   dotnet publish\Api\DumaLens.Api.dll --urls http://localhost:5200
+   dotnet publish\Web\DumaLens.Web.dll --urls http://localhost:5100
+   ```
+   Если Api на другом хосте/порту — задать Web `ApiSettings__BaseUrl`
+   (например `set ApiSettings__BaseUrl=http://api-host:5200/`), а Api —
+   `Cors__AllowedOrigins__0=<origin Web>` для браузерных запросов.
+4. Миграции применяют CLI-команды импортёра (`import-archive`, `crawl`,
+   `recalc-stats`, `create-admin`) — сами хосты схему не мигрируют. Первичное
+   наполнение: `import-archive --bulk` (см. выше) либо перенос уже наполненной базы.
+
+Отличия среды Production от Development: у Api нет Swagger UI и отказ запуска
+без `Auth__SigningKey`; у Web — страница `/Error` вместо детальных ошибок и HSTS
+(при https-эндпоинте). Ключ подписи и параметры секции `Auth` — ниже и в
+[13-e9-auth.md](13-e9-auth.md).
+
+Проверено на Э10: оба опубликованных хоста стартуют на машине с Runtime 8,
+поиск и карточки работают через опубликованный Web (отчёт приёмки Э10).
+
+## Периодический кроулер (планировщик)
+
+Сайт обновляется ежедневно; актуальность поддерживает регулярный `crawl`.
+Команда идемпотентна: добирает только недостающие голосования и итоги,
+остановка безопасна в любой момент. Миграции применяются автоматически.
+
+**Windows (Планировщик заданий, без прав администратора):**
+
+1. Задать строку подключения в пользовательские переменные окружения (один раз):
+   ```bat
+   setx ConnectionStrings__DefaultConnection "Host=localhost;Port=5432;Database=dumalens;Username=postgres;Password=***"
+   ```
+   (`setx` без `/M` не требует админ-прав; значение хранится в реестре пользователя
+   и доступно задачам планировщика того же пользователя).
+2. Создать задачу: «Планировщик заданий» → «Создать простую задачу» → ежедневно
+   в ночное время (например 04:00). Действие — запуск программы:
+   - Программа: `C:\Program Files\dotnet\dotnet.exe`
+   - Аргументы: `E:\DumaLens\DumaLens.Importer\bin\Release\net8.0\DumaLens.Importer.dll crawl --convocation 0 --delay-ms 500 --log E:\DumaLens\crawl.log`
+   - Рабочая папка: `E:\DumaLens` (пути заменить на фактические).
+
+   Либо из cmd (эквивалент):
+   ```bat
+   schtasks /Create /TN "DumaLens Crawl" /SC DAILY /ST 04:00 /TR "\"C:\Program Files\dotnet\dotnet.exe\" E:\DumaLens\DumaLens.Importer\bin\Release\net8.0\DumaLens.Importer.dll crawl --convocation 0 --delay-ms 500 --log E:\DumaLens\crawl.log"
+   ```
+3. Вежливые настройки по умолчанию (`--parallel 1 --delay-ms 1000`) консервативны;
+   `--delay-ms 500` — пауза 0,5 с между запросами (требование ФТ-06).
+   Замеренная рабочая точка `--parallel 8 --delay-ms 0` допустима для разового
+   догона (сайт выдерживает), для регулярных задач рекомендуется пауза ≥ 0,5 с.
+
+Длительность: обход листингов всех созывов — ~5500 страниц; при `--delay-ms 500`
+это ~1 час, новые карточки добавляются минутами. Полный обход I–IX в рабочей
+точке занял 33 мин (замер на тестовой машине, 18.11.2026).
+
+**Linux (cron):**
+```cron
+0 4 * * * cd /opt/dumalens && ConnectionStrings__DefaultConnection="..." /usr/bin/dotnet DumaLens.Importer/bin/Release/net8.0/DumaLens.Importer.dll crawl --convocation 0 --delay-ms 500 --log /var/log/dumalens/crawl.log
+```
 
 ## Аутентификация: ключ JWT и первый администратор (Э9)
 
@@ -149,11 +229,12 @@ Deploy\transition-int-keys.cmd
 1. `dotnet ef database update 20261115135332_DropVoteFactionStatsNonePctVoted --project DumaLens.Context`
    (Down-миграция возвращает GUID-схему; нужен SDK и `dotnet tool restore`).
 2. `TRUNCATE "DeputyVotes", "VoteFactionStats"` (psql).
-3. Если в базе есть голосования живого сайта (Э7, `Source = 1`) — удалить их:
+3. Если в базе есть голосования живого сайта (Э7, `Source = 'Site'`) — удалить их:
    Down-миграция удаляет их индивидуальные голоса, реимпорт архива их не восстанавливает,
    а кроулер пропускает существующие SiteId и не докачает их. Без очистки verify кода
    pre-int-keys (без фильтра Source) не сойдётся с паспортом архива.
-   `DELETE FROM "Votes" WHERE "Source" = 1; DELETE FROM "ImportQuarantine" WHERE "SourceUrl" IS NOT NULL;` (psql).
+   `DELETE FROM "Votes" WHERE "Source" = 'Site'; DELETE FROM "ImportQuarantine" WHERE "SourceUrl" IS NOT NULL;` (psql).
+   Колонка `Source` хранит строковые токены (`'Archive'`/`'Site'`), не числа.
 4. Полный `import-archive --zip vote-master.zip --bulk` **кодом до перехода** — тег
    `pre-int-keys` (отдельный worktree: `git worktree add ..\dumalens-pre pre-int-keys`).
 5. `verify` — 24/24.
@@ -182,8 +263,8 @@ Deploy\transition-int-keys.cmd
 
 | Машина | Полный импорт |
 |---|---|
-| Эталон (Ryzen 7 5700X, 32 ГБ, NVMe) | ~5 мин данные + ~1 мин индексы/FK |
-| Слабая машина (4–6 ядер, 16 ГБ, SSD + антивирус) | Замеров нет; ориентир 10–20 мин, уточнить пробным прогоном |
+| Эталон (8 ядер/16 потоков, 32 ГБ, NVMe) | ~5 мин данные + ~1 мин индексы/FK |
+| Тестовая машина (6 ядер, 8 ГБ, Win10, SSD + антивирус; замер 18.11.2026) | 6 мин 10 с (457 голосований/с, карантин 11); кроул I–IX — 33 мин |
 | Старая версия импортёра (для сравнения) | 26 мин 28 с |
 
 ## Сбои и восстановление
@@ -203,4 +284,6 @@ DumaLens\                 — репозиторий (исходники + пр�
   vote-master.zip         — архив голосований (~851 МБ)
   Deploy\import.cmd       — инкрементальная сборка + импорт --bulk + verify
   Deploy\demo.cmd         — запуск Api (Swagger) + Web + открытие браузера
+  publish\Api\            — опубликованный Api (опционально, для машины без SDK)
+  publish\Web\            — опубликованный Web (опционально, для машины без SDK)
 ```

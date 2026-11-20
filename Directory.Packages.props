@@ -34,6 +34,8 @@
     <PackageVersion Include="Swashbuckle.AspNetCore" Version="6.6.2" />
     <PackageVersion Include="Swashbuckle.AspNetCore.Annotations" Version="6.6.2" />
     <PackageVersion Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
+    <!-- Э10: транзитивный пин — CVE-2024-43485 (System.Text.Json < 8.0.5, приходит через bunit в Web.Tests) -->
+    <PackageVersion Include="System.Text.Json" Version="8.0.6" />
     <PackageVersion Include="xunit" Version="2.9.3" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="3.0.2" />
     <PackageVersion Include="Xunit.SkippableFact" Version="1.5.85" />

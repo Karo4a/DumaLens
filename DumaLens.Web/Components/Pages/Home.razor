@@ -89,6 +89,11 @@ else
             overview = null;
             error = "Сервис поиска недоступен.";
         }
+        catch (TaskCanceledException)
+        {
+            overview = null;
+            error = "Сервис поиска недоступен.";
+        }
 
         try
         {
@@ -100,6 +105,11 @@ else
             error ??= "Не удалось загрузить созывы (код " + ex.StatusCode + ").";
         }
         catch (HttpRequestException)
+        {
+            convocations = [];
+            error ??= "Сервис поиска недоступен.";
+        }
+        catch (TaskCanceledException)
         {
             convocations = [];
             error ??= "Сервис поиска недоступен.";

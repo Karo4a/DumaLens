@@ -123,6 +123,10 @@
         {
             error = "API недоступен. Повторите позже.";
         }
+        catch (TaskCanceledException)
+        {
+            error = "API недоступен. Повторите позже.";
+        }
         finally
         {
             loading = false;

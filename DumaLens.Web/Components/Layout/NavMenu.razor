@@ -42,6 +42,14 @@
         {
             // Выход выполняется локально даже при недоступном Api
         }
+        catch (HttpRequestException)
+        {
+            // Выход выполняется локально даже при недоступном Api
+        }
+        catch (TaskCanceledException)
+        {
+            // Выход выполняется локально даже при недоступном Api
+        }
         await TokenStore.ClearAsync();
         // Полная перезагрузка: цепь сбрасывается без гонки редиректов ProtectedContent
         Navigation.NavigateTo("/", forceLoad: true);

@@ -98,6 +98,13 @@ public partial class Users : ComponentBase, IDisposable
                 error = "API недоступен. Повторите позже.";
             }
         }
+        catch (TaskCanceledException)
+        {
+            if (sequence == loadSequence)
+            {
+                error = "API недоступен. Повторите позже.";
+            }
+        }
         finally
         {
             if (sequence == loadSequence)
@@ -143,6 +150,10 @@ public partial class Users : ComponentBase, IDisposable
             error = ApiErrorText.Describe(exception);
         }
         catch (HttpRequestException)
+        {
+            error = "API недоступен. Повторите позже.";
+        }
+        catch (TaskCanceledException)
         {
             error = "API недоступен. Повторите позже.";
         }
@@ -194,6 +205,10 @@ public partial class Users : ComponentBase, IDisposable
         {
             error = "API недоступен. Повторите позже.";
         }
+        catch (TaskCanceledException)
+        {
+            error = "API недоступен. Повторите позже.";
+        }
         finally
         {
             busy = false;
@@ -219,6 +234,10 @@ public partial class Users : ComponentBase, IDisposable
             error = ApiErrorText.Describe(exception);
         }
         catch (HttpRequestException)
+        {
+            error = "API недоступен. Повторите позже.";
+        }
+        catch (TaskCanceledException)
         {
             error = "API недоступен. Повторите позже.";
         }

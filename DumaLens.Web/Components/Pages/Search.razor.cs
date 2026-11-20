@@ -69,6 +69,10 @@ public partial class Search : ComponentBase, IDisposable
         {
             factions = [];
         }
+        catch (TaskCanceledException)
+        {
+            factions = [];
+        }
 
         try
         {
@@ -79,6 +83,10 @@ public partial class Search : ComponentBase, IDisposable
             convocations = [];
         }
         catch (HttpRequestException)
+        {
+            convocations = [];
+        }
+        catch (TaskCanceledException)
         {
             convocations = [];
         }
@@ -222,6 +230,14 @@ public partial class Search : ComponentBase, IDisposable
             }
         }
         catch (HttpRequestException)
+        {
+            if (sequence == searchSequence)
+            {
+                result = null;
+                error = "Сервис поиска недоступен.";
+            }
+        }
+        catch (TaskCanceledException)
         {
             if (sequence == searchSequence)
             {
